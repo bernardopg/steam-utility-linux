@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>SteamUtility.Cli</AssemblyName>
+    <RootNamespace>SteamUtility.Cli</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SteamUtility.Core\SteamUtility.Core.csproj" />
+  </ItemGroup>
+</Project>
