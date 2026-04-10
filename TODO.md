@@ -19,21 +19,22 @@
 - [x] Write `TODO.md`
 - [x] Parse `config/config.vdf` compatibility mappings
 - [x] Add merged compatibility report command
+- [x] Add CLI filtering by AppID/text
+- [x] Add JSON output mode
+- [x] Add initial test project
 
 ## In progress
 - [ ] Improve compatibility tool detection heuristics
 - [ ] Parse more Steam config/state files beyond compatibility mapping
+- [ ] Expand automated tests
 
 ## Next
 - [ ] Parse active user-specific Steam config where relevant
 - [ ] Detect tool assignment precedence and edge cases
 - [ ] Map compatdata entries back to app names in a richer report
-- [ ] Add filtering by AppID/name in CLI
-- [ ] Add JSON output mode for automation
-- [ ] Add tests for VDF parsing
-- [ ] Add tests for library discovery
-- [ ] Add tests for app manifest parsing
-- [ ] Add tests for compatibility mapping parser
+- [ ] Add JSON schema stability notes / versioning
+- [ ] Add tests for compatibility tool scanner
+- [ ] Add tests for compatdata scanner
 - [ ] Add logging / diagnostics mode
 - [ ] Add release build instructions
 

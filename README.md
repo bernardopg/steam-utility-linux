@@ -17,17 +17,20 @@ Implemented today:
 - Bundled/custom compatibility tool discovery
 - `config/config.vdf` parsing for compatibility tool assignments
 - Per-app compatibility report generation
+- CLI filtering and JSON output support
+- Initial test project for parsers/reporting
 
 Still missing for parity with the original Windows project:
 - Native Steam API loading on Linux
 - Full feature mapping of original commands
 - Replacement strategy for Win32-only hidden-window behavior
-- Tests
+- Broader test coverage
 - Packaging/release workflow
 
 ## Repository structure
 - `src/SteamUtility.Core` — core domain and Linux discovery logic
 - `src/SteamUtility.Cli` — current executable entrypoint
+- `tests/SteamUtility.Tests` — initial unit tests
 - `docs/` — architecture and porting notes
 - `TODO.md` — execution checklist / tracking board
 
@@ -57,7 +60,16 @@ dotnet run --project src/SteamUtility.Cli -- compat-mapping
 
 # merge apps + compatdata + mapping into one report
 dotnet run --project src/SteamUtility.Cli -- compat-report
+
+# examples with filters / JSON
+dotnet run --project src/SteamUtility.Cli -- apps --match proton
+dotnet run --project src/SteamUtility.Cli -- compat-report --app-id 123456 --json
 ```
+
+## Global options
+- `--json` — emit structured JSON instead of text
+- `--app-id <id>` — filter by a specific AppID where applicable
+- `--match <text>` — case-insensitive name/text filter where applicable
 
 ## What the project can answer right now
 - Where Steam is installed on Linux
