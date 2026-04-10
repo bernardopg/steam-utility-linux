@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using SteamUtility.Core.Abstractions;
 using SteamUtility.Core.Models;
@@ -46,6 +47,10 @@ switch (options.Command)
 
     case "compat-report":
         PrintCompatibilityReport(installation, options);
+        return;
+
+    case "state-report":
+        PrintStateReport(installation, options);
         return;
 
     case "check_ownership":
@@ -320,6 +325,36 @@ static void PrintCompatibilityReport(SteamInstallation? installation, CliOptions
         var tool = string.IsNullOrWhiteSpace(entry.AssignedTool) ? "<none>" : entry.AssignedTool;
         Console.WriteLine($"  - {entry.AppId}: {entry.Name} | compatdata={compatData} | tool={tool}");
     }
+}
+
+static void PrintStateReport(SteamInstallation? installation, CliOptions options)
+{
+    if (installation is null)
+    {
+        WriteNotFound(options);
+        return;
+    }
+
+    var service = new SteamStateReportService();
+    var summary = service.Build(installation);
+
+    if (options.Json)
+    {
+        WriteJson(summary);
+        return;
+    }
+
+    Console.WriteLine($"Steam root: {summary.RootPath}");
+    Console.WriteLine($"Library folders: {summary.LibraryCount}");
+    Console.WriteLine($"Installed apps: {summary.InstalledAppCount}");
+    Console.WriteLine($"Compatdata entries: {summary.CompatDataCount}");
+    Console.WriteLine($"Compatibility tools: {summary.CompatibilityToolCount}");
+    Console.WriteLine($"Explicit compatibility mappings: {summary.ExplicitCompatibilityMappings}");
+    Console.WriteLine($"Compatibility report entries: {summary.ReportEntryCount}");
+    Console.WriteLine($"Login users: {summary.LoginUserCount}");
+    Console.WriteLine($"Active Steam account: {FormatActiveAccount(summary)}");
+    Console.WriteLine($"User config files: {summary.UserConfigFileCount}");
+    Console.WriteLine($"User app scopes: {summary.UserAppScopeCount}");
 }
 
 static void PrintCheckOwnership(SteamInstallation? installation, CliOptions options)
@@ -599,6 +634,14 @@ static void PrintToggleSingleAchievement(SteamInstallation? installation, CliOpt
             return;
         }
 
+        session.EnsureCurrentUserStatsLoaded();
+
+        if (!ValidateAchievementState(session, achievementId, shouldUnlock))
+        {
+            WriteLegacyJson(new { error = "Achievement state validation failed after storing changes" });
+            return;
+        }
+
         WriteLegacyJson(new { success = shouldUnlock ? "Successfully unlocked achievement" : "Successfully locked achievement" });
     }
     catch (Exception ex)
@@ -640,6 +683,14 @@ static void PrintToggleAchievement(SteamInstallation? installation, CliOptions o
             return;
         }
 
+        session.EnsureCurrentUserStatsLoaded();
+
+        if (!ValidateAchievementState(session, achievementId, !achieved))
+        {
+            WriteLegacyJson(new { error = "Achievement state validation failed after storing changes" });
+            return;
+        }
+
         WriteLegacyJson(new { success = achieved ? "Successfully locked achievement" : "Successfully unlocked achievement" });
     }
     catch (Exception ex)
@@ -668,6 +719,15 @@ static void PrintToggleAllAchievements(SteamInstallation? installation, CliOptio
                 return;
             }
 
+            session.EnsureCurrentUserStatsLoaded();
+
+            if (!ValidateAllAchievementStates(session, expectedAchieved: false) ||
+                !ValidateStatsResetToDefaults(session, installation!, appId))
+            {
+                WriteLegacyJson(new { error = "Post-reset validation failed" });
+                return;
+            }
+
             WriteLegacyJson(new { success = "Successfully lock all achievements" });
             return;
         }
@@ -687,6 +747,14 @@ static void PrintToggleAllAchievements(SteamInstallation? installation, CliOptio
         if (!allSucceeded || !session.StoreStats())
         {
             WriteLegacyJson(new { error = "One or more achievements failed to unlock" });
+            return;
+        }
+
+        session.EnsureCurrentUserStatsLoaded();
+
+        if (!ValidateAllAchievementStates(session, expectedAchieved: true))
+        {
+            WriteLegacyJson(new { error = "Achievement validation failed after unlocking all achievements" });
             return;
         }
 
@@ -750,6 +818,14 @@ static void PrintUpdateStats(SteamInstallation? installation, CliOptions options
             return;
         }
 
+        session.EnsureCurrentUserStatsLoaded();
+
+        if (!ValidateUpdatedStats(session, updates))
+        {
+            WriteLegacyJson(new { error = "Stat validation failed after storing changes" });
+            return;
+        }
+
         WriteLegacyJson(new { success = "Successfully updated all stats" });
     }
     catch (Exception ex)
@@ -773,6 +849,14 @@ static void PrintResetAllStats(SteamInstallation? installation, CliOptions optio
         if (!session.ResetAllStats(false) || !session.StoreStats())
         {
             WriteLegacyJson(new { error = "Failed to reset all stats" });
+            return;
+        }
+
+        session.EnsureCurrentUserStatsLoaded();
+
+        if (!ValidateStatsResetToDefaults(session, installation!, appId))
+        {
+            WriteLegacyJson(new { error = "Stat reset validation failed after storing changes" });
             return;
         }
 
@@ -877,12 +961,178 @@ static bool TryApplyStatUpdate(SteamworksSession session, StatUpdate update)
         float floatValue => session.SetStat(update.Name, floatValue),
         double doubleValue => session.SetStat(update.Name, (float)doubleValue),
         decimal decimalValue => session.SetStat(update.Name, (float)decimalValue),
-        string stringValue when int.TryParse(stringValue, out var parsedInt)
+        string stringValue when int.TryParse(stringValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedInt)
             => session.SetStat(update.Name, parsedInt),
-        string stringValue when float.TryParse(stringValue, out var parsedFloat)
+        string stringValue when float.TryParse(stringValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedFloat)
             => session.SetStat(update.Name, parsedFloat),
         _ => false
     };
+}
+
+static bool ValidateAchievementState(SteamworksSession session, string achievementId, bool expectedAchieved)
+{
+    return session.GetAchievement(achievementId, out var achieved) && achieved == expectedAchieved;
+}
+
+static bool ValidateAllAchievementStates(SteamworksSession session, bool expectedAchieved)
+{
+    var total = (int)session.GetNumAchievements();
+
+    for (var index = 0; index < total; index++)
+    {
+        var achievementId = session.GetAchievementName((uint)index);
+        if (!ValidateAchievementState(session, achievementId, expectedAchieved))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static bool ValidateUpdatedStats(SteamworksSession session, IReadOnlyList<StatUpdate> updates)
+{
+    foreach (var update in updates)
+    {
+        if (string.IsNullOrWhiteSpace(update.Name))
+        {
+            return false;
+        }
+
+        if (!TryNormalizeStatValue(update.Value, out var expectedValue, out var expectedIsInteger))
+        {
+            return false;
+        }
+
+        if (!TryGetCurrentStatValue(session, update.Name, out var actualValue))
+        {
+            return false;
+        }
+
+        if (!ValuesMatch(expectedValue, actualValue, expectedIsInteger))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static bool ValidateStatsResetToDefaults(SteamworksSession session, SteamInstallation installation, uint appId)
+{
+    var loader = new StatsSchemaLoader();
+    if (!loader.LoadUserGameStatsSchema(installation, appId, out _, out var statDefinitions))
+    {
+        return true;
+    }
+
+    foreach (var stat in statDefinitions)
+    {
+        if (!TryNormalizeStatValue(stat.DefaultValue, out var expectedValue, out var expectedIsInteger))
+        {
+            return false;
+        }
+
+        if (!TryGetCurrentStatValue(session, stat.Id, out var actualValue))
+        {
+            return false;
+        }
+
+        if (!ValuesMatch(expectedValue, actualValue, expectedIsInteger))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static bool TryGetCurrentStatValue(SteamworksSession session, string name, out double value)
+{
+    if (session.GetStat(name, out int intValue))
+    {
+        value = intValue;
+        return true;
+    }
+
+    if (session.GetStat(name, out float floatValue))
+    {
+        value = floatValue;
+        return true;
+    }
+
+    value = default;
+    return false;
+}
+
+static bool TryNormalizeStatValue(object? rawValue, out double value, out bool isInteger)
+{
+    switch (rawValue)
+    {
+        case JsonElement { ValueKind: JsonValueKind.Number } element when element.TryGetInt64(out var int64Value):
+            value = int64Value;
+            isInteger = true;
+            return true;
+        case JsonElement { ValueKind: JsonValueKind.Number } element when element.TryGetDouble(out var doubleValue):
+            value = doubleValue;
+            isInteger = false;
+            return true;
+        case int intValue:
+            value = intValue;
+            isInteger = true;
+            return true;
+        case long longValue:
+            value = longValue;
+            isInteger = true;
+            return true;
+        case short shortValue:
+            value = shortValue;
+            isInteger = true;
+            return true;
+        case byte byteValue:
+            value = byteValue;
+            isInteger = true;
+            return true;
+        case uint uintValue:
+            value = uintValue;
+            isInteger = true;
+            return true;
+        case ulong ulongValue when ulongValue <= long.MaxValue:
+            value = (long)ulongValue;
+            isInteger = true;
+            return true;
+        case float floatValue:
+            value = floatValue;
+            isInteger = false;
+            return true;
+        case double doubleValue:
+            value = doubleValue;
+            isInteger = false;
+            return true;
+        case decimal decimalValue:
+            value = (double)decimalValue;
+            isInteger = false;
+            return true;
+        case string stringValue when long.TryParse(stringValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedInt):
+            value = parsedInt;
+            isInteger = true;
+            return true;
+        case string stringValue when double.TryParse(stringValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedDouble):
+            value = parsedDouble;
+            isInteger = false;
+            return true;
+        default:
+            value = default;
+            isInteger = false;
+            return false;
+    }
+}
+
+static bool ValuesMatch(double expectedValue, double actualValue, bool expectedIsInteger)
+{
+    return expectedIsInteger
+        ? Math.Abs(expectedValue - actualValue) < 0.000001d
+        : Math.Abs(expectedValue - actualValue) < 0.0001d;
 }
 
 static void WriteLegacyJson<T>(T payload)
@@ -920,6 +1170,7 @@ static void PrintUsage()
     Console.WriteLine("  compat-tools   List bundled and custom compatibility tools");
     Console.WriteLine("  compat-mapping List explicit compatibility-tool mappings from config.vdf");
     Console.WriteLine("  compat-report  Merge apps, compatdata, and config mappings into one report");
+    Console.WriteLine("  state-report   Summarize Steam library, compat, and user state files");
     Console.WriteLine("  check_ownership <output_path> [app_ids_json_or_file]");
     Console.WriteLine("                 Check account ownership through steamclient.so and write games.json");
     Console.WriteLine("  idle <app_id> [app_name]");
@@ -965,6 +1216,26 @@ static List<uint> LoadOwnershipAppIds(string? source)
     }
 
     return JsonSerializer.Deserialize<List<uint>>(source) ?? [];
+}
+
+static string FormatActiveAccount(SteamEnvironmentSummary summary)
+{
+    if (summary.ActiveSteamId is null && string.IsNullOrWhiteSpace(summary.ActiveAccountName))
+    {
+        return "<none>";
+    }
+
+    if (summary.ActiveSteamId is null)
+    {
+        return summary.ActiveAccountName ?? "<none>";
+    }
+
+    if (string.IsNullOrWhiteSpace(summary.ActiveAccountName))
+    {
+        return summary.ActiveSteamId.Value.ToString();
+    }
+
+    return $"{summary.ActiveAccountName} ({summary.ActiveSteamId.Value})";
 }
 
 internal sealed record CliOptions(string? Command, bool Json, int? AppId, string? Match, string[] Positionals)

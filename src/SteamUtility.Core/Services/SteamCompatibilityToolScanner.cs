@@ -61,6 +61,7 @@ public sealed class SteamCompatibilityToolScanner
         }
 
         return name.Contains("Proton", StringComparison.OrdinalIgnoreCase)
+            || name.Contains("SteamLinuxRuntime", StringComparison.OrdinalIgnoreCase)
             || name.Contains("Steam Linux Runtime", StringComparison.OrdinalIgnoreCase)
             || name.Contains("Soldier", StringComparison.OrdinalIgnoreCase)
             || name.Contains("Sniper", StringComparison.OrdinalIgnoreCase)

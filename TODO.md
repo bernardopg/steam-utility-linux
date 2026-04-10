@@ -25,12 +25,10 @@
 - [x] Add Linux `steamclient.so` loader scaffold
 - [x] Add initial `check_ownership` port through native Steam client interfaces
 - [x] Port achievement/stat commands through native Linux `libsteam_api.so`
-
-## In progress
-- [ ] Improve compatibility tool detection heuristics
-- [ ] Parse more Steam config/state files beyond compatibility mapping
-- [ ] Expand automated tests
-- [ ] Broaden runtime validation of state-changing achievement/stat commands
+- [x] Improve compatibility tool detection heuristics
+- [x] Expand automated tests
+- [x] Parse more Steam config/state files beyond compatibility mapping
+- [x] Broaden runtime validation of state-changing achievement/stat commands
 
 ## Base parity
 - [ ] Add explicit `--help` and `-h` handling in the CLI

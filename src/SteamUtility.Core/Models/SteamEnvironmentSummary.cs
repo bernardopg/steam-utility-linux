@@ -7,4 +7,9 @@ public sealed record SteamEnvironmentSummary(
     int CompatDataCount,
     int CompatibilityToolCount,
     int ExplicitCompatibilityMappings,
-    int ReportEntryCount);
+    int ReportEntryCount,
+    int LoginUserCount,
+    ulong? ActiveSteamId,
+    string? ActiveAccountName,
+    int UserConfigFileCount,
+    int UserAppScopeCount);

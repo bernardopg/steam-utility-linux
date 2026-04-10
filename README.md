@@ -64,6 +64,9 @@ dotnet run --project src/SteamUtility.Cli -- compat-mapping
 # merge apps + compatdata + mapping into one report
 dotnet run --project src/SteamUtility.Cli -- compat-report
 
+# summarize Steam library, user state, and config files
+dotnet run --project src/SteamUtility.Cli -- state-report
+
 # query account ownership and write the upstream-compatible games.json payload
 dotnet run --project src/SteamUtility.Cli -- check_ownership /tmp/games.json "[730,570,440]"
 
@@ -92,6 +95,8 @@ dotnet run --project src/SteamUtility.Cli -- check_ownership /tmp/games.json --j
 - Which apps have compatdata prefixes
 - Which Proton/runtime folders appear available
 - Which apps have explicit compatibility-tool assignments in `config/config.vdf`
+- Which Steam accounts are present in `config/loginusers.vdf`
+- Which user-specific app scopes exist under `userdata/*/config`
 - Which queried AppIDs are owned by the logged-in Steam account when the native client is running
 - Achievement/stat data and mutations for apps that expose Steam user stats
 
