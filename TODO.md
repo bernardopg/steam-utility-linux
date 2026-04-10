@@ -35,24 +35,22 @@
 - [x] Align native initialization failures with upstream-style failure reasons
 - [x] Match `get_achievement_data` callback and timeout semantics more closely
 - [x] Align command success and error messages with upstream behavior where practical
+- [x] Parse active user-specific Steam config where relevant
+- [x] Detect tool assignment precedence and edge cases
+- [x] Map compatdata entries back to app names in a richer report
+- [x] Add JSON schema stability notes / versioning
+- [x] Add tests for compatibility tool scanner
+- [x] Add tests for compatdata scanner
+- [x] Add logging / diagnostics mode
+- [x] Add release build instructions
+- [x] Add CI pipeline
+- [x] Package binaries/releases
 
 ## Base parity
 
-## Next
-- [ ] Parse active user-specific Steam config where relevant
-- [ ] Detect tool assignment precedence and edge cases
-- [ ] Map compatdata entries back to app names in a richer report
-- [ ] Add JSON schema stability notes / versioning
-- [ ] Add tests for compatibility tool scanner
-- [ ] Add tests for compatdata scanner
-- [ ] Add logging / diagnostics mode
-- [ ] Add release build instructions
-
 ## Later
 - [ ] Consider Tauri or other GUI only after core parity is clearer
-- [ ] Add CI pipeline
-- [ ] Package binaries/releases
 
 ## Notes
 - The repository now covers Linux discovery plus the upstream ownership/achievement/stat command surface.
-- The remaining work is now in the `Next` items, mostly deeper discovery/reporting polish and auxiliary diagnostics.
+- The remaining work is now strategic follow-up in `Later`, mainly whether the project should ever add a GUI layer.

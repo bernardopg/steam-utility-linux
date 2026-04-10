@@ -4,4 +4,7 @@ public sealed record SteamCompatDataEntry(
     int AppId,
     string CompatDataPath,
     string? PfxPath,
-    string LibraryPath);
+    string LibraryPath)
+{
+    public int SchemaVersion => 1;
+}

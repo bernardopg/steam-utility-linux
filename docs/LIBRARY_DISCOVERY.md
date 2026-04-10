@@ -18,7 +18,9 @@ Replace the Windows Registry-based Steam discovery path with a Linux-native file
 - `steamapps/libraryfolders.vdf`
 - `steamapps/appmanifest_*.acf`
 - `config/config.vdf`
-- `userdata/`
+- `config/loginusers.vdf`
+- `userdata/*/config/localconfig.vdf`
+- `userdata/*/config/sharedconfig.vdf`
 
 ## Current implementation status
 Implemented:
@@ -26,9 +28,11 @@ Implemented:
 - Minimal VDF reader for quoted-key Valve files
 - Parsing of `libraryfolders.vdf`
 - Aggregated installation model
-
-Not implemented yet:
 - App manifest parsing
 - Proton / compatibility tool discovery
 - Native Linux Steam API loading
+- Active Steam login user parsing
+- User-specific config scanning for app scopes
+
+Not implemented yet:
 - Feature parity with the original Windows-only idle behavior

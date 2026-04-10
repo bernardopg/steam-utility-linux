@@ -128,6 +128,15 @@ static void PrintDetect(SteamInstallation? installation, CliOptions options)
     Console.WriteLine(installation is null
         ? "Steam installation not found."
         : $"Steam installation found at: {installation.RootPath}");
+
+    if (options.Diagnostics)
+    {
+        PrintDiagnostics("detect", new
+        {
+            found = installation is not null,
+            rootPath = installation?.RootPath
+        });
+    }
 }
 
 static void PrintLibraries(SteamInstallation? installation, CliOptions options)
@@ -156,6 +165,15 @@ static void PrintLibraries(SteamInstallation? installation, CliOptions options)
     {
         var marker = library.IsDefault ? "*" : "-";
         Console.WriteLine($"  {marker} [{library.Key}] {library.Path}");
+    }
+
+    if (options.Diagnostics)
+    {
+        PrintDiagnostics("libraries", new
+        {
+            total = libraries.Length,
+            defaultLibrary = libraries.FirstOrDefault(library => library.IsDefault)?.Path
+        });
     }
 }
 
@@ -191,6 +209,16 @@ static void PrintApps(SteamInstallation? installation, CliOptions options)
     {
         Console.WriteLine($"  - {app.AppId}: {app.Name} [{app.InstallDirectory}]");
     }
+
+    if (options.Diagnostics)
+    {
+        PrintDiagnostics("apps", new
+        {
+            total = apps.Length,
+            filteredByAppId = options.AppId,
+            match = options.Match
+        });
+    }
 }
 
 static void PrintCompatData(SteamInstallation? installation, CliOptions options)
@@ -223,6 +251,15 @@ static void PrintCompatData(SteamInstallation? installation, CliOptions options)
     foreach (var entry in entries)
     {
         Console.WriteLine($"  - AppId {entry.AppId}: {entry.CompatDataPath}");
+    }
+
+    if (options.Diagnostics)
+    {
+        PrintDiagnostics("compatdata", new
+        {
+            total = entries.Length,
+            withPfx = entries.Count(entry => entry.PfxPath is not null)
+        });
     }
 }
 
@@ -257,6 +294,16 @@ static void PrintCompatibilityTools(SteamInstallation? installation, CliOptions 
     {
         var kind = tool.IsCustom ? "custom" : "bundled";
         Console.WriteLine($"  - {tool.Name} ({kind}) -> {tool.RootPath}");
+    }
+
+    if (options.Diagnostics)
+    {
+        PrintDiagnostics("compat-tools", new
+        {
+            total = tools.Length,
+            custom = tools.Count(tool => tool.IsCustom),
+            bundled = tools.Count(tool => !tool.IsCustom)
+        });
     }
 }
 
@@ -293,6 +340,14 @@ static void PrintCompatibilityMappings(SteamInstallation? installation, CliOptio
     {
         Console.WriteLine($"  - AppId {mapping.AppId}: {mapping.ToolName}");
     }
+
+    if (options.Diagnostics)
+    {
+        PrintDiagnostics("compat-mapping", new
+        {
+            total = mappings.Length
+        });
+    }
 }
 
 static void PrintCompatibilityReport(SteamInstallation? installation, CliOptions options)
@@ -308,6 +363,8 @@ static void PrintCompatibilityReport(SteamInstallation? installation, CliOptions
         .Where(entry => !options.AppId.HasValue || entry.AppId == options.AppId.Value)
         .Where(entry => MatchesText(entry.Name, options.Match)
             || MatchesText(entry.AssignedTool, options.Match)
+            || MatchesText(entry.ResolvedToolPath, options.Match)
+            || MatchesText(entry.CompatDataPath, options.Match)
             || MatchesText(entry.InstallDirectory, options.Match))
         .ToArray();
 
@@ -329,7 +386,22 @@ static void PrintCompatibilityReport(SteamInstallation? installation, CliOptions
     {
         var compatData = entry.HasCompatData ? "yes" : "no";
         var tool = string.IsNullOrWhiteSpace(entry.AssignedTool) ? "<none>" : entry.AssignedTool;
-        Console.WriteLine($"  - {entry.AppId}: {entry.Name} | compatdata={compatData} | tool={tool}");
+        var resolvedTool = string.IsNullOrWhiteSpace(entry.ResolvedToolPath)
+            ? "<unresolved>"
+            : $"{Path.GetFileName(entry.ResolvedToolPath)} ({(entry.ResolvedToolIsCustom ? "custom" : "bundled")})";
+        var compatDataPath = string.IsNullOrWhiteSpace(entry.CompatDataPath) ? "<none>" : entry.CompatDataPath;
+        Console.WriteLine($"  - {entry.AppId}: {entry.Name} | compatdata={compatData} | tool={tool} | resolved={resolvedTool}");
+        Console.WriteLine($"    compatdata_path={compatDataPath}");
+    }
+
+    if (options.Diagnostics)
+    {
+        PrintDiagnostics("compat-report", new
+        {
+            total = report.Length,
+            withCompatData = report.Count(entry => entry.HasCompatData),
+            withResolvedTools = report.Count(entry => !string.IsNullOrWhiteSpace(entry.ResolvedToolPath))
+        });
     }
 }
 
@@ -361,6 +433,23 @@ static void PrintStateReport(SteamInstallation? installation, CliOptions options
     Console.WriteLine($"Active Steam account: {FormatActiveAccount(summary)}");
     Console.WriteLine($"User config files: {summary.UserConfigFileCount}");
     Console.WriteLine($"User app scopes: {summary.UserAppScopeCount}");
+    Console.WriteLine($"Active user config files: {summary.ActiveUserConfigs.Count}");
+    Console.WriteLine($"Active user app ids: {FormatAppIds(summary.ActiveUserAppIds)}");
+
+    if (options.Diagnostics)
+    {
+        PrintDiagnostics("state-report", new
+        {
+            activeAccount = FormatActiveAccount(summary),
+            activeUserConfigs = summary.ActiveUserConfigs.Select(entry => new
+            {
+                entry.ConfigType,
+                entry.ConfigPath,
+                appIds = entry.AppIds
+            }),
+            activeUserAppIds = summary.ActiveUserAppIds
+        });
+    }
 }
 
 static void PrintCheckOwnership(SteamInstallation? installation, CliOptions options)
@@ -1228,6 +1317,16 @@ static void WriteJson<T>(T value)
     }));
 }
 
+static void PrintDiagnostics(string label, object payload)
+{
+    Console.Error.WriteLine($"[diagnostics:{label}] {JsonSerializer.Serialize(payload)}");
+}
+
+static string FormatAppIds(IReadOnlyList<int> appIds)
+{
+    return appIds.Count == 0 ? "<none>" : string.Join(", ", appIds);
+}
+
 static void PrintUsage()
 {
     Console.WriteLine("steam-utility-linux");
@@ -1254,6 +1353,7 @@ static void PrintUsage()
     Console.WriteLine();
     Console.WriteLine("Options:");
     Console.WriteLine("  --json           Emit JSON output");
+    Console.WriteLine("  --diagnostics    Emit additional diagnostic logging");
     Console.WriteLine("  --app-id <id>    Filter by AppID");
     Console.WriteLine("  --match <text>   Case-insensitive text filter");
     Console.WriteLine("  --help, -h       Show this help text");
@@ -1308,12 +1408,13 @@ static string FormatActiveAccount(SteamEnvironmentSummary summary)
     return $"{summary.ActiveAccountName} ({summary.ActiveSteamId.Value})";
 }
 
-internal sealed record CliOptions(string? Command, bool Json, int? AppId, string? Match, string[] Positionals)
+internal sealed record CliOptions(string? Command, bool Json, bool Diagnostics, int? AppId, string? Match, string[] Positionals)
 {
     public static CliOptions Parse(string[] args)
     {
         string? command = null;
         var json = false;
+        var diagnostics = false;
         int? appId = null;
         string? match = null;
         var positionals = new List<string>();
@@ -1326,6 +1427,10 @@ internal sealed record CliOptions(string? Command, bool Json, int? AppId, string
             {
                 case "--json":
                     json = true;
+                    break;
+
+                case "--diagnostics":
+                    diagnostics = true;
                     break;
 
                 case "--app-id" when i + 1 < args.Length && int.TryParse(args[i + 1], out var parsedAppId):
@@ -1351,6 +1456,6 @@ internal sealed record CliOptions(string? Command, bool Json, int? AppId, string
             }
         }
 
-        return new CliOptions(command, json, appId, match, positionals.ToArray());
+        return new CliOptions(command, json, diagnostics, appId, match, positionals.ToArray());
     }
 }

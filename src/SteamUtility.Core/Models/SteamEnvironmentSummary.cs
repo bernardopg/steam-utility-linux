@@ -12,4 +12,9 @@ public sealed record SteamEnvironmentSummary(
     ulong? ActiveSteamId,
     string? ActiveAccountName,
     int UserConfigFileCount,
-    int UserAppScopeCount);
+    int UserAppScopeCount,
+    IReadOnlyList<SteamUserConfigEntry> ActiveUserConfigs,
+    IReadOnlyList<int> ActiveUserAppIds)
+{
+    public int SchemaVersion => 1;
+}

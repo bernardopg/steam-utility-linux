@@ -6,4 +6,7 @@ public sealed record SteamAppManifest(
     string InstallDirectory,
     string ManifestPath,
     string LibraryPath,
-    string StateFlags);
+    string StateFlags)
+{
+    public int SchemaVersion => 1;
+}

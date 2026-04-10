@@ -5,4 +5,7 @@ public sealed record SteamLoginUser(
     string? AccountName,
     string? PersonaName,
     bool MostRecent,
-    string? Timestamp);
+    string? Timestamp)
+{
+    public int SchemaVersion => 1;
+}

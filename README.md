@@ -6,7 +6,7 @@ Base project: https://github.com/zevnda/steam-utility
 ## Current status
 This repository is already past the bootstrap stage.
 
-Implemented today:
+Implemented:
 - .NET 8 solution and project structure
 - Cross-platform core library + Linux CLI entrypoint
 - Steam root discovery on common Linux paths
@@ -23,12 +23,11 @@ Implemented today:
 - Native Linux `libsteam_api.so` bridge for achievement/stat commands
 - CLI filtering and JSON output support
 - Initial test project for parsers/reporting
-
-Still missing for parity with the original Windows project:
 - Runtime validation of the state-changing achievement/stat commands
-- Replacement strategy for Win32-only hidden-window behavior
+- Linux replacement for the Win32 hidden-window idle behavior
 - Broader test coverage
-- Packaging/release workflow
+- CI and release workflow
+- JSON schema/versioning notes for structured outputs
 
 ## Repository structure
 - `src/SteamUtility.Core` — core domain and Linux discovery logic
@@ -81,10 +80,14 @@ dotnet run --project src/SteamUtility.Cli -- update_stats 440 "[{\"name\":\"STAT
 dotnet run --project src/SteamUtility.Cli -- apps --match proton
 dotnet run --project src/SteamUtility.Cli -- compat-report --app-id 123456 --json
 dotnet run --project src/SteamUtility.Cli -- check_ownership /tmp/games.json --json
+
+# extra diagnostics
+dotnet run --project src/SteamUtility.Cli -- state-report --diagnostics
 ```
 
 ## Global options
 - `--json` — emit structured JSON instead of text
+- `--diagnostics` — emit additional diagnostic logging to stderr
 - `--app-id <id>` — filter by a specific AppID where applicable
 - `--match <text>` — case-insensitive name/text filter where applicable
 
@@ -100,12 +103,20 @@ dotnet run --project src/SteamUtility.Cli -- check_ownership /tmp/games.json --j
 - Which queried AppIDs are owned by the logged-in Steam account when the native client is running
 - Achievement/stat data and mutations for apps that expose Steam user stats
 
+## Output contracts
+- JSON outputs that back the discovery/report commands carry `schemaVersion = 1`
+- Versioning notes live in [docs/JSON_OUTPUTS.md](docs/JSON_OUTPUTS.md)
+
 ## Design direction
 The port is being built in layers:
 1. Filesystem and config discovery
 2. Linux compatibility/runtime mapping
 3. Feature reconstruction behind clean interfaces
 4. Replacement or removal of Windows-only behavior
+
+## Release notes
+- Local release build instructions are in [docs/RELEASE.md](docs/RELEASE.md)
+- GitHub Actions CI and release workflows live under `.github/workflows/`
 
 ## Next priorities
 See `TODO.md` for the live checklist.

@@ -4,4 +4,7 @@ public sealed record SteamUserConfigEntry(
     ulong SteamId,
     string ConfigType,
     string ConfigPath,
-    IReadOnlyList<int> AppIds);
+    IReadOnlyList<int> AppIds)
+{
+    public int SchemaVersion => 1;
+}

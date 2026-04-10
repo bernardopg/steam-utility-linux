@@ -56,6 +56,9 @@ public static class SteamStateReportServiceTests
             if (summary.ActiveAccountName != "primary") throw new Exception("Unexpected active account.");
             if (summary.UserConfigFileCount != 1) throw new Exception("Unexpected user config file count.");
             if (summary.UserAppScopeCount != 1) throw new Exception("Unexpected user app scope count.");
+            if (summary.ActiveUserConfigs.Count != 1) throw new Exception("Unexpected active user config count.");
+            if (summary.ActiveUserConfigs[0].ConfigType != "local") throw new Exception("Unexpected active user config type.");
+            if (summary.ActiveUserAppIds.Count != 1 || summary.ActiveUserAppIds[0] != 570) throw new Exception("Unexpected active user app ids.");
         }
         finally
         {

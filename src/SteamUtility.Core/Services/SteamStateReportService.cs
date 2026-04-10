@@ -26,6 +26,14 @@ public sealed class SteamStateReportService
         var activeUser = loginUsers.FirstOrDefault(user => user.MostRecent)
             ?? loginUsers.OrderByDescending(user => user.Timestamp ?? string.Empty, StringComparer.OrdinalIgnoreCase)
                 .FirstOrDefault();
+        var activeUserConfigs = activeUser is null
+            ? []
+            : userConfigs.Where(entry => entry.SteamId == activeUser.SteamId).ToArray();
+        var activeUserAppIds = activeUserConfigs
+            .SelectMany(static entry => entry.AppIds)
+            .Distinct()
+            .OrderBy(static appId => appId)
+            .ToArray();
 
         return new SteamEnvironmentSummary(
             RootPath: installation.RootPath,
@@ -39,7 +47,9 @@ public sealed class SteamStateReportService
             ActiveSteamId: activeUser?.SteamId,
             ActiveAccountName: activeUser?.AccountName ?? activeUser?.PersonaName,
             UserConfigFileCount: userConfigs.Count,
-            UserAppScopeCount: userConfigs.Sum(entry => entry.AppIds.Count));
+            UserAppScopeCount: userConfigs.Sum(entry => entry.AppIds.Count),
+            ActiveUserConfigs: activeUserConfigs,
+            ActiveUserAppIds: activeUserAppIds);
     }
 
     private IReadOnlyList<SteamLoginUser> LoadLoginUsers(string rootPath)
