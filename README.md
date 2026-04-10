@@ -1,6 +1,7 @@
 # steam-utility-linux
 
 Linux-first port scaffold for the original Windows-oriented `steam-utility` project.
+Base project: https://github.com/zevnda/steam-utility
 
 ## Current status
 This repository is already past the bootstrap stage.

@@ -32,6 +32,14 @@
 - [ ] Expand automated tests
 - [ ] Broaden runtime validation of state-changing achievement/stat commands
 
+## Base parity
+- [ ] Add explicit `--help` and `-h` handling in the CLI
+- [ ] Restore the optional app name argument for `idle <app_id> [app_name]`
+- [ ] Decide on the Linux replacement for the Win32 hidden idle window behavior
+- [ ] Align native initialization failures with upstream-style failure reasons
+- [ ] Match `get_achievement_data` callback and timeout semantics more closely
+- [ ] Align command success and error messages with upstream behavior where practical
+
 ## Next
 - [ ] Parse active user-specific Steam config where relevant
 - [ ] Detect tool assignment precedence and edge cases
