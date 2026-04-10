@@ -22,11 +22,15 @@
 - [x] Add CLI filtering by AppID/text
 - [x] Add JSON output mode
 - [x] Add initial test project
+- [x] Add Linux `steamclient.so` loader scaffold
+- [x] Add initial `check_ownership` port through native Steam client interfaces
+- [x] Port achievement/stat commands through native Linux `libsteam_api.so`
 
 ## In progress
 - [ ] Improve compatibility tool detection heuristics
 - [ ] Parse more Steam config/state files beyond compatibility mapping
 - [ ] Expand automated tests
+- [ ] Broaden runtime validation of state-changing achievement/stat commands
 
 ## Next
 - [ ] Parse active user-specific Steam config where relevant
@@ -39,13 +43,11 @@
 - [ ] Add release build instructions
 
 ## Later
-- [ ] Evaluate Linux-native Steam API loading strategy
-- [ ] Reconstruct original commands one by one behind abstractions
 - [ ] Decide what to do with Win32-only idle/window behavior
 - [ ] Consider Tauri or other GUI only after core parity is clearer
 - [ ] Add CI pipeline
 - [ ] Package binaries/releases
 
 ## Notes
-- The current milestone is discovery/parsing, not full behavioral parity.
-- The riskiest missing area is anything coupled to Win32 or Windows-only Steam client loading.
+- The repository now covers Linux discovery plus the upstream ownership/achievement/stat command surface.
+- The riskiest remaining area is behavior coupled to Win32-only idle/window handling and broad runtime validation of mutating commands.

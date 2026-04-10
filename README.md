@@ -17,12 +17,14 @@ Implemented today:
 - Bundled/custom compatibility tool discovery
 - `config/config.vdf` parsing for compatibility tool assignments
 - Per-app compatibility report generation
+- Linux `steamclient.so` loading scaffold
+- Initial ownership lookup through the running Steam client
+- Native Linux `libsteam_api.so` bridge for achievement/stat commands
 - CLI filtering and JSON output support
 - Initial test project for parsers/reporting
 
 Still missing for parity with the original Windows project:
-- Native Steam API loading on Linux
-- Full feature mapping of original commands
+- Runtime validation of the state-changing achievement/stat commands
 - Replacement strategy for Win32-only hidden-window behavior
 - Broader test coverage
 - Packaging/release workflow
@@ -61,9 +63,20 @@ dotnet run --project src/SteamUtility.Cli -- compat-mapping
 # merge apps + compatdata + mapping into one report
 dotnet run --project src/SteamUtility.Cli -- compat-report
 
+# query account ownership and write the upstream-compatible games.json payload
+dotnet run --project src/SteamUtility.Cli -- check_ownership /tmp/games.json "[730,570,440]"
+
+# read achievement/stat data and cache it locally
+dotnet run --project src/SteamUtility.Cli -- get_achievement_data 440 /tmp/steam-utility-cache
+
+# legacy achievement/stat commands from the upstream CLI
+dotnet run --project src/SteamUtility.Cli -- unlock_achievement 440 ACH_ID
+dotnet run --project src/SteamUtility.Cli -- update_stats 440 "[{\"name\":\"STAT\",\"value\":100}]"
+
 # examples with filters / JSON
 dotnet run --project src/SteamUtility.Cli -- apps --match proton
 dotnet run --project src/SteamUtility.Cli -- compat-report --app-id 123456 --json
+dotnet run --project src/SteamUtility.Cli -- check_ownership /tmp/games.json --json
 ```
 
 ## Global options
@@ -78,6 +91,8 @@ dotnet run --project src/SteamUtility.Cli -- compat-report --app-id 123456 --jso
 - Which apps have compatdata prefixes
 - Which Proton/runtime folders appear available
 - Which apps have explicit compatibility-tool assignments in `config/config.vdf`
+- Which queried AppIDs are owned by the logged-in Steam account when the native client is running
+- Achievement/stat data and mutations for apps that expose Steam user stats
 
 ## Design direction
 The port is being built in layers:

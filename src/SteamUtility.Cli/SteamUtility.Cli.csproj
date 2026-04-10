@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
     <AssemblyName>SteamUtility.Cli</AssemblyName>
     <RootNamespace>SteamUtility.Cli</RootNamespace>
+    <UseAppHost>false</UseAppHost>
   </PropertyGroup>
 
   <ItemGroup>

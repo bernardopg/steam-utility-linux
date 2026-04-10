@@ -15,6 +15,6 @@ public static class SteamLibraryFoldersParserTests
         if (result[0].Path != "/home/test/.local/share/Steam") throw new Exception("Unexpected first path.");
         if (!result[0].IsDefault) throw new Exception("Expected first folder to be default.");
         if (result[1].Path != "/mnt/games/SteamLibrary") throw new Exception("Unexpected second path.");
-        if (result[1].AppIds is null || !result[1].AppIds.Contains(730)) throw new Exception("Expected second folder to contain app 730.");
+        if (result[1].AppIds is not { } appIds || !appIds.Contains(730)) throw new Exception("Expected second folder to contain app 730.");
     }
 }

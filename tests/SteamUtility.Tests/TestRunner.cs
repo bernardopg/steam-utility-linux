@@ -8,7 +8,11 @@ public static class TestRunner
         {
             SteamLibraryFoldersParserTests.Parse_MultipleLibraryFolders_ReturnsExpectedEntries,
             SteamConfigCompatibilityParserTests.Parse_CompatToolMapping_ReturnsAssignments,
-            SteamCompatibilityReportServiceTests.Build_WithMissingFiles_ReturnsEmptyReport
+            SteamCompatibilityReportServiceTests.Build_WithMissingFiles_ReturnsEmptyReport,
+            LinuxSteamClientLibraryTests.FindLibraryPath_Prefers64BitClient_WhenMultipleCandidatesExist,
+            LinuxSteamClientLibraryTests.FindLibraryPath_ReturnsNull_WhenClientLibraryDoesNotExist,
+            LinuxSteamApiLibraryResolverTests.FindLibraryPath_PrefersLocalLibraryFromSteamGameFolders,
+            LinuxSteamApiLibraryResolverTests.FindLibraryPath_UsesEnvironmentOverrideWhenPresent
         };
 
         foreach (var test in tests)
