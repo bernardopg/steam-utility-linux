@@ -1,4 +1,4 @@
-# steam-utility-linux
+# steam-utility-multiplataform
 
 Cross-platform port of the original `steam-utility` project with Linux and Windows backends.
 Base project: https://github.com/zevnda/steam-utility

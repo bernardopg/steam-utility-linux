@@ -1093,7 +1093,7 @@ static string GetAchievementDataPath(ulong steamId, uint appId, string? cacheDir
         ? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
             ".cache",
-            "steam-utility-linux")
+            "steam-utility-multiplataform")
         : cacheDirectory;
 
     var targetDirectory = Path.Combine(root, steamId.ToString(), "achievement_data");
@@ -1330,7 +1330,7 @@ static string FormatAppIds(IReadOnlyList<int> appIds)
 
 static void PrintUsage()
 {
-    Console.WriteLine("steam-utility-linux");
+    Console.WriteLine("steam-utility-multiplataform");
     Console.WriteLine("Usage:");
     Console.WriteLine("  detect         Detect the local Steam installation path on Linux");
     Console.WriteLine("  libraries      List discovered Steam library folders");
