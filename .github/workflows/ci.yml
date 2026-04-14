@@ -6,9 +6,15 @@ on:
       - main
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
+  analyze:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout
@@ -19,8 +25,141 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Restore
+      - name: Restore dependencies
         run: dotnet restore
 
-      - name: Test
-        run: dotnet run --project tests/SteamUtility.Tests
+      - name: Check for vulnerable dependencies
+        run: |
+          echo "## 🔍 Dependency Vulnerability Check" >> "$GITHUB_STEP_SUMMARY"
+          if dotnet list package --vulnerable --include-transitive | grep -q "has"; then
+            echo >> "$GITHUB_STEP_SUMMARY"
+            echo "⚠️ **Vulnerable dependencies found:**" >> "$GITHUB_STEP_SUMMARY"
+            echo >> "$GITHUB_STEP_SUMMARY"
+            dotnet list package --vulnerable --include-transitive >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          else
+            echo >> "$GITHUB_STEP_SUMMARY"
+            echo "✅ No vulnerable dependencies found" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Check code style (formatting)
+        shell: bash
+        run: |
+          if ! dotnet format --verify-no-changes --verbosity diagnostic; then
+            echo "❌ Code formatting issues found. Run 'dotnet format' locally to fix."
+            exit 1
+          fi
+
+
+  build:
+    runs-on: ubuntu-latest
+    needs: analyze
+    permissions:
+      contents: read
+
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build -c ${{ matrix.configuration }} --no-restore
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Install coverage tools
+        run: |
+          dotnet tool install --global dotnet-coverage
+          dotnet tool install --global dotnet-reportgenerator-globaltool
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - name: Run tests with coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p artifacts/coverage/report
+
+          dotnet build tests/SteamUtility.Tests -c Release --no-restore
+
+          set +e
+          dotnet-coverage collect \
+            "dotnet run --project tests/SteamUtility.Tests -c Release --no-build" \
+            -f cobertura \
+            -o artifacts/coverage/coverage.cobertura.xml
+          test_exit_code=$?
+          set -e
+
+          if [[ -f artifacts/coverage/coverage.cobertura.xml ]]; then
+            reportgenerator \
+              "-reports:artifacts/coverage/coverage.cobertura.xml" \
+              "-targetdir:artifacts/coverage/report" \
+              "-reporttypes:HtmlSummary;TextSummary;Cobertura"
+
+            {
+              echo "## 📊 Test Coverage Report"
+              echo
+              cat artifacts/coverage/report/Summary.txt
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## 📊 Test Coverage Report" >> "$GITHUB_STEP_SUMMARY"
+            echo >> "$GITHUB_STEP_SUMMARY"
+            echo "⚠️ Coverage output was not generated." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          exit "$test_exit_code"
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: coverage-report
+          path: artifacts/coverage
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const summaryPath = 'artifacts/coverage/report/Summary.txt';
+
+            if (fs.existsSync(summaryPath)) {
+              const summary = fs.readFileSync(summaryPath, 'utf8');
+
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `### 📊 Coverage Report\n\`\`\`\n${summary}\n\`\`\``
+              });
+            }

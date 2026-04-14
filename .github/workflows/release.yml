@@ -9,7 +9,69 @@ permissions:
   contents: write
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract.outputs.version }}
+      changelog_updated: ${{ steps.validate_changelog.outputs.updated }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 2
+
+      - name: Extract version from tag
+        id: extract
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION"
+
+      - name: Validate tag format
+        run: |
+          VERSION=${{ steps.extract.outputs.version }}
+          if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?(\+[a-zA-Z0-9.]+)?$ ]]; then
+            echo "❌ Invalid version format: $VERSION"
+            echo "Expected format: v1.0.0 or v1.0.0-rc.1"
+            exit 1
+          fi
+          echo "✅ Version format is valid: $VERSION"
+
+      - name: Validate CHANGELOG update
+        id: validate_changelog
+        run: |
+          if git diff HEAD~1 HEAD -- CHANGELOG.md | grep -q "## \[${{ steps.extract.outputs.version }}\]"; then
+            echo "updated=true" >> "$GITHUB_OUTPUT"
+            echo "✅ CHANGELOG.md has been updated for this version"
+          else
+            echo "updated=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ CHANGELOG.md might not have been updated"
+          fi
+
+  test:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Run tests
+        run: dotnet test tests/SteamUtility.Tests -c Release --no-restore --logger "console;verbosity=normal"
+
   build-linux:
+    needs: [validate, test]
     runs-on: ubuntu-latest
 
     strategy:
@@ -18,12 +80,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
 
       - name: Publish CLI
         run: >
@@ -32,7 +97,14 @@ jobs:
           -r ${{ matrix.runtime }}
           --self-contained true
           -p:PublishSingleFile=true
+          --no-restore
           -o artifacts/${{ matrix.runtime }}
+
+      - name: Create checksums
+        run: |
+          cd artifacts/${{ matrix.runtime }}
+          find . -type f -exec sha256sum {} \; > CHECKSUMS.sha256
+          cd ../..
 
       - name: Pack release archive
         run: |
@@ -40,22 +112,27 @@ jobs:
           zip -r ../../SteamUtility-${{ matrix.runtime }}.zip .
 
       - name: Upload release artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: SteamUtility-${{ matrix.runtime }}
           path: SteamUtility-${{ matrix.runtime }}.zip
+          retention-days: 1
 
   build-windows:
+    needs: [validate, test]
     runs-on: windows-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
 
       - name: Publish CLI
         run: >
@@ -64,31 +141,71 @@ jobs:
           -r win-x64
           --self-contained true
           -p:PublishSingleFile=true
+          --no-restore
           -o artifacts/win-x64
+
+      - name: Create checksums
+        shell: pwsh
+        run: |
+          cd artifacts/win-x64
+          Get-ChildItem -File -Recurse | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash
+            "$hash  $($_.Name)" | Out-File -Append -FilePath CHECKSUMS.sha256 -Encoding UTF8
+          }
+          cd ../..
 
       - name: Pack release archive
         shell: pwsh
         run: Compress-Archive -Path artifacts\win-x64\* -DestinationPath SteamUtility-win-x64.zip
 
       - name: Upload release artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: SteamUtility-win-x64
           path: SteamUtility-win-x64.zip
+          retention-days: 1
 
   publish:
     needs:
+      - validate
       - build-linux
       - build-windows
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8.0.1
         with:
           path: release-assets
 
+      - name: Prepare release notes
+        run: |
+          VERSION=${{ needs.validate.outputs.version }}
+          {
+            echo "# Release $VERSION"
+            echo
+            echo "## Changelog"
+            echo
+            sed -n "/## \[${VERSION#v}\]/,/## \[/p" CHANGELOG.md | head -n -1
+            echo
+            echo "## Downloads"
+            echo
+            echo "- **Linux x64**: \`SteamUtility-linux-x64.zip\`"
+            echo "- **Linux ARM64**: \`SteamUtility-linux-arm64.zip\`"
+            echo "- **Windows x64**: \`SteamUtility-win-x64.zip\`"
+          } > release_notes.md
+          cat release_notes.md
+
       - name: Publish GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
-          files: release-assets/**/*.zip
+          files: |
+            release-assets/SteamUtility-linux-x64/SteamUtility-linux-x64.zip
+            release-assets/SteamUtility-linux-arm64/SteamUtility-linux-arm64.zip
+            release-assets/SteamUtility-win-x64/SteamUtility-win-x64.zip
+          body_path: release_notes.md
+          draft: false
+          prerelease: ${{ contains(needs.validate.outputs.version, '-') }}

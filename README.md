@@ -1,5 +1,9 @@
 # steam-utility-multiplataform
 
+[![CI](https://github.com/bernardopg/steam-utility-multiplataform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/bernardopg/steam-utility-multiplataform/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-reporting-brightgreen)](https://github.com/bernardopg/steam-utility-multiplataform/actions/workflows/ci.yml)
+[![Release](https://github.com/bernardopg/steam-utility-multiplataform/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/bernardopg/steam-utility-multiplataform/actions/workflows/release.yml)
+
 Cross-platform port of the original `steam-utility` project with Linux and Windows backends.
 Base project: https://github.com/zevnda/steam-utility
 
@@ -143,6 +147,19 @@ The CLI accepts underscore and hyphen forms for selected commands:
 ## Release notes
 - Local release build instructions are in [docs/RELEASE.md](docs/RELEASE.md)
 - GitHub Actions CI and release workflows live under `.github/workflows/`
+
+## Coverage
+The CI workflow now collects coverage for the custom test runner, publishes the raw coverage files as a build artifact, and writes a short summary to the GitHub job page.
+
+To reproduce the same report locally:
+
+```bash
+dotnet tool install --global dotnet-coverage
+dotnet tool install --global dotnet-reportgenerator-globaltool
+dotnet build tests/SteamUtility.Tests -c Release
+dotnet-coverage collect "dotnet run --project tests/SteamUtility.Tests -c Release --no-build" -f cobertura -o artifacts/coverage/coverage.cobertura.xml
+reportgenerator "-reports:artifacts/coverage/coverage.cobertura.xml" "-targetdir:artifacts/coverage/report" "-reporttypes:HtmlSummary;TextSummary;Cobertura"
+```
 
 ## Next priorities
 See `TODO.md` for the live checklist.
