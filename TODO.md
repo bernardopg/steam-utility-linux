@@ -59,7 +59,8 @@
 - [x] Add deterministic CLI parity coverage for `get_achievement_data`, including item lookup, aggregate output file generation, and initialization failures
 - [x] Add deterministic CLI parity coverage for achievement mutations (`unlock_achievement`, `lock_achievement`, `toggle_achievement`, `unlock_all_achievements`, `lock_all_achievements`)
 - [x] Add deterministic CLI parity coverage for stats mutations (`update_stats`, `reset_all_stats`)
-- [ ] Add Linux integration validation for the native Steam paths (`steamclient.so`, `libsteam_api.so`) with a real running Steam session, because current automated tests only cover parsers/scanners/runtime selection and do not prove the Steamworks command path end-to-end
+- [x] Publish a Linux real-Steam validation checklist documenting the live manual verification flow for all upstream commands
+- [x] Execute Linux integration validation for the native Steam paths (`steamclient.so`, `libsteam_api.so`) with a real running Steam session, because automated tests still do not prove the Steamworks command path end-to-end
 - [ ] Add Windows-specific automated or documented manual validation for `WindowsSteamLocator`, `WindowsSteamClientLibraryLoader`, and `WindowsSteamApiLibraryResolver`, which currently have no dedicated tests
 - [ ] Add coverage collection/reporting (for example Coverlet + CI artifact/public summary); today the repo has passing tests via `dotnet run --project tests/SteamUtility.Tests`, but no actual coverage report
 - [ ] Add regression tests for the remaining high-risk native services (`SteamworksSession`, `SteamOwnershipService`, `SteamApiNative`, `StatsSchemaLoader`) after the new CLI extraction coverage

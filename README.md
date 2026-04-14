@@ -134,6 +134,8 @@ The CLI accepts underscore and hyphen forms for selected commands:
 - [docs/LIBRARY_DISCOVERY.md](docs/LIBRARY_DISCOVERY.md)
 - [docs/PROTON_AND_COMPATDATA.md](docs/PROTON_AND_COMPATDATA.md)
 - [docs/WINDOWS_DEPENDENCIES.md](docs/WINDOWS_DEPENDENCIES.md)
+- [docs/CLI_PARITY_MATRIX.md](docs/CLI_PARITY_MATRIX.md)
+- [docs/LINUX_REAL_STEAM_VALIDATION.md](docs/LINUX_REAL_STEAM_VALIDATION.md)
 - [docs/PORTING_PLAN.md](docs/PORTING_PLAN.md)
 - [docs/JSON_OUTPUTS.md](docs/JSON_OUTPUTS.md)
 - [docs/RELEASE.md](docs/RELEASE.md)
