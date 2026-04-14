@@ -12,3 +12,4 @@ TestResults/
 *.snupkg
 .env
 steam_appid.txt
+/.hermes
