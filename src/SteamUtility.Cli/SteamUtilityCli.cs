@@ -112,12 +112,12 @@ public static class SteamUtilityCli
 
             case "update_stats":
             case "update-stats":
-                PrintUpdateStats(installation, options);
+                PrintUpdateStats(installation, options, overrides);
                 return;
 
             case "reset_all_stats":
             case "reset-all-stats":
-                PrintResetAllStats(installation, options);
+                PrintResetAllStats(installation, options, overrides);
                 return;
 
             default:
@@ -987,7 +987,7 @@ public static class SteamUtilityCli
         }
     }
 
-    static void PrintUpdateStats(SteamInstallation? installation, CliOptions options)
+    static void PrintUpdateStats(SteamInstallation? installation, CliOptions options, CliRuntimeOverrides overrides)
     {
         if (!TryGetSteamworksAppId(installation, options, out var appId) || options.Positionals.Length < 2)
         {
@@ -1014,6 +1014,19 @@ public static class SteamUtilityCli
 
         try
         {
+            if (overrides.RunUpdateStats is not null)
+            {
+                var outcome = overrides.RunUpdateStats(installation!, appId, updates);
+                if (!outcome.Success)
+                {
+                    WriteLegacyJson(new { error = outcome.Error ?? "One or more stats failed to update" });
+                    return;
+                }
+
+                WriteLegacyJson(new { success = outcome.SuccessMessage ?? "Successfully updated all stats" });
+                return;
+            }
+
             using var session = new SteamworksSession(installation!, appId);
             session.EnsureCurrentUserStatsLoaded();
 
@@ -1063,7 +1076,7 @@ public static class SteamUtilityCli
         }
     }
 
-    static void PrintResetAllStats(SteamInstallation? installation, CliOptions options)
+    static void PrintResetAllStats(SteamInstallation? installation, CliOptions options, CliRuntimeOverrides overrides)
     {
         if (!TryGetSteamworksAppId(installation, options, out var appId))
         {
@@ -1072,6 +1085,19 @@ public static class SteamUtilityCli
 
         try
         {
+            if (overrides.RunResetAllStats is not null)
+            {
+                var outcome = overrides.RunResetAllStats(installation!, appId);
+                if (!outcome.Success)
+                {
+                    WriteLegacyJson(new { error = outcome.Error ?? "Failed to reset all stats" });
+                    return;
+                }
+
+                WriteLegacyJson(new { success = outcome.SuccessMessage ?? "Successfully reset all stats" });
+                return;
+            }
+
             using var session = new SteamworksSession(installation!, appId);
             session.EnsureCurrentUserStatsLoaded();
 
@@ -1506,6 +1532,10 @@ public static class SteamUtilityCli
         public Func<SteamInstallation, uint, string, AchievementMutationCommandResult>? RunToggleAchievement { get; init; }
 
         public Func<SteamInstallation, uint, bool, AchievementMutationCommandResult>? RunToggleAllAchievements { get; init; }
+
+        public Func<SteamInstallation, uint, IReadOnlyList<StatUpdate>, StatsMutationCommandResult>? RunUpdateStats { get; init; }
+
+        public Func<SteamInstallation, uint, StatsMutationCommandResult>? RunResetAllStats { get; init; }
     }
 
     public sealed record AchievementDataCommandResult(
@@ -1514,6 +1544,11 @@ public static class SteamUtilityCli
         List<StatData> Stats);
 
     public sealed record AchievementMutationCommandResult(
+        bool Success,
+        string? Error = null,
+        string? SuccessMessage = null);
+
+    public sealed record StatsMutationCommandResult(
         bool Success,
         string? Error = null,
         string? SuccessMessage = null);
