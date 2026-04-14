@@ -88,7 +88,7 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore src/SteamUtility.Cli/SteamUtility.Cli.csproj -r ${{ matrix.runtime }}
 
       - name: Publish CLI
         run: >
@@ -132,7 +132,7 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore src/SteamUtility.Cli/SteamUtility.Cli.csproj -r win-x64
 
       - name: Publish CLI
         run: >
