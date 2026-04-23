@@ -107,6 +107,101 @@ public static class CheckOwnershipCliTests
         }
     }
 
+    public static void Run_WithoutAppIdsPayload_UsesDefaultRemoteSource()
+    {
+        var outputPath = Path.Combine(Path.GetTempPath(), $"games-{Guid.NewGuid():N}.json");
+        try
+        {
+            var result = CommandContractTestHarness.Run(
+                ["check_ownership", outputPath, "--json"],
+                new SteamUtilityCli.CliRuntimeOverrides
+                {
+                    ResolveInstallation = () => FakeSteamInstallationFactory.Create(),
+                    FetchDefaultOwnershipAppIdsContent = () => "[730,570]",
+                    GetOwnedApps = (_, appIds) =>
+                    {
+                        if (appIds.Count != 2 || appIds[0] != 730 || appIds[1] != 570)
+                        {
+                            throw new Exception("Expected default remote source app ids to be used.");
+                        }
+
+                        return
+                        [
+                            new SteamOwnedApp(730, "Counter-Strike 2")
+                        ];
+                    }
+                });
+
+            using var payload = JsonDocument.Parse(result.Stdout);
+            var root = payload.RootElement;
+            if (!root.GetProperty("success").GetBoolean())
+            {
+                throw new Exception("Expected success payload when default remote app id source succeeds.");
+            }
+
+            if (root.GetProperty("totalChecked").GetInt32() != 2)
+            {
+                throw new Exception("Expected totalChecked=2 when default remote source provides two app ids.");
+            }
+        }
+        finally
+        {
+            if (File.Exists(outputPath))
+            {
+                File.Delete(outputPath);
+            }
+        }
+    }
+
+    public static void Run_WithoutAppIdsPayload_WhenDefaultRemoteFetchFails_ReturnsFailureJson()
+    {
+        var outputPath = Path.Combine(Path.GetTempPath(), $"games-{Guid.NewGuid():N}.json");
+        var result = CommandContractTestHarness.Run(
+            ["check_ownership", outputPath, "--json"],
+            new SteamUtilityCli.CliRuntimeOverrides
+            {
+                ResolveInstallation = () => FakeSteamInstallationFactory.Create(),
+                FetchDefaultOwnershipAppIdsContent = () => throw new InvalidOperationException("network down")
+            });
+
+        using var payload = JsonDocument.Parse(result.Stdout);
+        var error = payload.RootElement.GetProperty("error").GetString() ?? string.Empty;
+        if (!error.Contains("Failed to load app ids", StringComparison.Ordinal) ||
+            !error.Contains("network down", StringComparison.Ordinal))
+        {
+            throw new Exception("Expected default remote fetch failure to be surfaced in the JSON error payload.");
+        }
+
+        if (File.Exists(outputPath))
+        {
+            throw new Exception("Fetch failure should not create an output file.");
+        }
+    }
+
+    public static void Run_WithoutAppIdsPayload_WhenDefaultRemotePayloadIsInvalid_ReturnsFailureJson()
+    {
+        var outputPath = Path.Combine(Path.GetTempPath(), $"games-{Guid.NewGuid():N}.json");
+        var result = CommandContractTestHarness.Run(
+            ["check_ownership", outputPath, "--json"],
+            new SteamUtilityCli.CliRuntimeOverrides
+            {
+                ResolveInstallation = () => FakeSteamInstallationFactory.Create(),
+                FetchDefaultOwnershipAppIdsContent = () => "not-json"
+            });
+
+        using var payload = JsonDocument.Parse(result.Stdout);
+        var error = payload.RootElement.GetProperty("error").GetString() ?? string.Empty;
+        if (!error.Contains("Failed to load app ids", StringComparison.Ordinal))
+        {
+            throw new Exception("Expected invalid default remote payload to be surfaced as a load error.");
+        }
+
+        if (File.Exists(outputPath))
+        {
+            throw new Exception("Invalid default remote payload should not create an output file.");
+        }
+    }
+
     public static void Run_WhenOwnershipServiceFails_ReturnsFailureReason()
     {
         var outputPath = Path.Combine(Path.GetTempPath(), $"games-{Guid.NewGuid():N}.json");

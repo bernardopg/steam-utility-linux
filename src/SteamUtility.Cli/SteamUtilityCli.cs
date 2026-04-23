@@ -491,7 +491,7 @@ public static class SteamUtilityCli
 
         try
         {
-            appIds = LoadOwnershipAppIds(options.Positionals.ElementAtOrDefault(1));
+            appIds = LoadOwnershipAppIds(options.Positionals.ElementAtOrDefault(1), overrides);
         }
         catch (Exception ex)
         {
@@ -1479,12 +1479,19 @@ public static class SteamUtilityCli
         Console.WriteLine("  check_ownership /tmp/games.json /path/to/app_ids.json");
     }
 
-    static List<uint> LoadOwnershipAppIds(string? source)
+    static string FetchDefaultOwnershipAppIdsContent()
+    {
+        using var httpClient = new HttpClient();
+        return httpClient.GetStringAsync(DefaultOwnershipAppIdsUrl).GetAwaiter().GetResult();
+    }
+
+    static List<uint> LoadOwnershipAppIds(string? source, CliRuntimeOverrides overrides)
     {
         if (string.IsNullOrWhiteSpace(source))
         {
-            using var httpClient = new HttpClient();
-            var content = httpClient.GetStringAsync(DefaultOwnershipAppIdsUrl).GetAwaiter().GetResult();
+            var content = overrides.FetchDefaultOwnershipAppIdsContent is not null
+                ? overrides.FetchDefaultOwnershipAppIdsContent()
+                : FetchDefaultOwnershipAppIdsContent();
             return JsonSerializer.Deserialize<List<uint>>(content) ?? [];
         }
 
@@ -1520,6 +1527,8 @@ public static class SteamUtilityCli
     public sealed class CliRuntimeOverrides
     {
         public Func<SteamInstallation?>? ResolveInstallation { get; init; }
+
+        public Func<string>? FetchDefaultOwnershipAppIdsContent { get; init; }
 
         public Func<SteamInstallation, IReadOnlyList<uint>, IReadOnlyList<SteamOwnedApp>>? GetOwnedApps { get; init; }
 

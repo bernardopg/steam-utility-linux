@@ -62,6 +62,8 @@
 - [x] Publish a Linux real-Steam validation checklist documenting the live manual verification flow for all upstream commands
 - [x] Execute Linux integration validation for the native Steam paths (`steamclient.so`, `libsteam_api.so`) with a real running Steam session, because automated tests still do not prove the Steamworks command path end-to-end
 - [ ] Add Windows-specific automated or documented manual validation for `WindowsSteamLocator`, `WindowsSteamClientLibraryLoader`, and `WindowsSteamApiLibraryResolver`, which currently have no dedicated tests
+- [ ] Execute Windows integration validation for the native Steam command flow (`check_ownership`, `idle`, `get_achievement_data`, achievement mutations, stats mutations`) with a real running Steam session, mirroring the completed Linux live validation
+- [x] Add deterministic coverage for `check_ownership` when no AppID payload is provided, including the default remote source path (`DEFAULT_GAMES_URL`) and failure handling for fetch/parse errors
 - [x] Add coverage collection/reporting (for example Coverlet + CI artifact/public summary); this is now implemented, and the repository's direct validation path remains `dotnet run --project tests/SteamUtility.Tests`
 - [x] Add regression tests for the remaining high-risk native services (`SteamworksSession`, `SteamOwnershipService`, `SteamApiNative`, `StatsSchemaLoader`) after the new CLI extraction coverage
 
@@ -70,4 +72,5 @@
 
 ## Notes
 - The upstream command surface from `zevnda/steam-utility` is present in this repository (`check_ownership`, `idle`, `get_achievement_data`, `unlock_achievement`, `lock_achievement`, `toggle_achievement`, `unlock_all_achievements`, `lock_all_achievements`, `update_stats`, `reset_all_stats`).
-- The main gap is no longer missing commands; it is Windows-specific validation and continued hardening of release/test automation around the custom test runner.
+- This repository already goes beyond upstream with extra discovery/report commands such as `detect`, `libraries`, `apps`, `compatdata`, `compat-tools`, `compat-mapping`, `compat-report`, and `state-report`.
+- The main parity gap is no longer missing commands; it is proof and validation: Windows-specific runtime coverage, Windows real-session validation, and deterministic coverage for the default remote AppID source path used by `check_ownership`.
