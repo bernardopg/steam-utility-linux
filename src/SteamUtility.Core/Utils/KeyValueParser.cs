@@ -36,7 +36,7 @@ public sealed class KeyValue
                 return InvalidNode;
             }
 
-            return Children.SingleOrDefault(child =>
+            return Children.FirstOrDefault(child =>
                 string.Equals(child.Name, key, StringComparison.InvariantCultureIgnoreCase)) ?? InvalidNode;
         }
     }

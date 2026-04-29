@@ -56,7 +56,7 @@ public static class StatsSchemaLoaderTests
                 }
 
                 var loader = new StatsSchemaLoader();
-                if (!loader.LoadUserGameStatsSchema(installation, 70120, out var achievements, out var stats))
+                if (!loader.LoadUserGameStatsSchema(installation, 70120, session, out var achievements, out var stats))
                 {
                     throw new Exception("Expected stats schema loader to succeed.");
                 }

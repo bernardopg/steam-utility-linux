@@ -21,7 +21,7 @@
 
 These commands intentionally keep legacy payload semantics for upstream compatibility and are not part of the schema-versioned report contracts:
 - `check_ownership`
-- `idle`
+- `idle` (multi-game mode prints one legacy init-result JSON line per child idle process)
 - `get_achievement_data`
 - achievement/stat mutation commands (`unlock_*`, `lock_*`, `toggle_*`, `update_stats`, `reset_all_stats`)
 

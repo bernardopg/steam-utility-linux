@@ -57,6 +57,6 @@ It currently:
 
 - The project is cross-platform, with Linux and Windows release assets built from the same CLI codebase.
 - `dotnet run --project tests/SteamUtility.Tests -c Release` is the authoritative local validation command today.
-- The release workflow still invokes `dotnet test` against the custom test project; keep that caveat in mind when changing the test harness or release automation.
+- The release workflow runs the custom test runner with `dotnet run --project tests/SteamUtility.Tests -c Release --no-build --no-restore`; keep this aligned with the test harness because `dotnet test` is not authoritative for this repository.
 - If the CLI command surface changes, update `README.md`, `docs/JSON_OUTPUTS.md`, and command-specific docs together.
 - Keep docs aligned with runtime behavior whenever platform-specific wording changes.

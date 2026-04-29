@@ -5,8 +5,6 @@ namespace SteamUtility.Core.Services;
 
 public sealed class SteamworksSession : IDisposable
 {
-    public static SteamworksSession? Current { get; private set; }
-
     private readonly uint _appId;
     private readonly ISteamApiLibraryResolver _libraryResolver;
     private readonly string? _previousSteamAppId;
@@ -51,7 +49,6 @@ public sealed class SteamworksSession : IDisposable
                     "Failed to resolve Steam user or user stats interfaces.");
             }
 
-            Current = this;
             _initialized = true;
         }
         catch
@@ -134,11 +131,6 @@ public sealed class SteamworksSession : IDisposable
         {
             SteamApiNative.Shutdown();
             _initialized = false;
-        }
-
-        if (ReferenceEquals(Current, this))
-        {
-            Current = null;
         }
 
         RestoreProcessState();

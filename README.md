@@ -15,7 +15,7 @@ This project lets you:
 - summarize Steam environment state in text or JSON;
 - query ownership through the native Steam client;
 - read and mutate achievements/stats through Steamworks;
-- keep an app in an active idle session.
+- keep one or more apps in active idle sessions.
 
 ## What this project is
 
@@ -35,7 +35,7 @@ It combines two main capabilities:
    - check ownership through the running Steam client
    - read achievement/stat data
    - mutate achievements/stats
-   - keep a game session idle
+   - keep one or more game sessions idle
 
 ## Current platform status
 
@@ -141,6 +141,9 @@ dotnet run --project src/SteamUtility.Cli -- get_achievement_data 440 /tmp/steam
 # keep an app idle
 dotnet run --project src/SteamUtility.Cli -- idle 440 "Team Fortress 2"
 
+# keep several apps idle; the CLI starts one child process per AppID
+dotnet run --project src/SteamUtility.Cli -- idle 440 570 730
+
 # mutate achievements/stats
 dotnet run --project src/SteamUtility.Cli -- unlock_achievement 440 ACH_ID
 dotnet run --project src/SteamUtility.Cli -- lock_achievement 440 ACH_ID
@@ -171,7 +174,7 @@ dotnet run --project src/SteamUtility.Cli -- reset_all_stats 440
 | Command | Description | Live Steam required |
 | --- | --- | --- |
 | `check_ownership` | Query owned apps through the native Steam client and write `games.json` | Yes |
-| `idle` | Keep an app session active | Yes |
+| `idle` | Keep one or more app sessions active | Yes |
 | `get_achievement_data` | Read and cache achievement/stat data for an app | Yes |
 | `unlock_achievement` | Unlock one achievement | Yes |
 | `lock_achievement` | Lock one achievement | Yes |
@@ -219,7 +222,7 @@ These are the structured discovery/report commands. Their output shape is treate
 ### Compatibility-first legacy outputs
 These commands intentionally preserve legacy/upstream-oriented payload behavior and should not yet be treated as stable versioned report contracts:
 - `check_ownership`
-- `idle`
+- `idle` (multi-game mode prints one legacy init-result JSON line per child idle process)
 - `get_achievement_data`
 - achievement/stat mutation commands
 

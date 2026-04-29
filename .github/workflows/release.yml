@@ -41,7 +41,9 @@ jobs:
       - name: Validate CHANGELOG update
         id: validate_changelog
         run: |
-          if git diff HEAD~1 HEAD -- CHANGELOG.md | grep -q "## \[${{ steps.extract.outputs.version }}\]"; then
+          VERSION="${{ steps.extract.outputs.version }}"
+          CHANGELOG_VERSION="${VERSION#v}"
+          if git diff HEAD~1 HEAD -- CHANGELOG.md | grep -q "## \[${CHANGELOG_VERSION}\]"; then
             echo "updated=true" >> "$GITHUB_OUTPUT"
             echo "✅ CHANGELOG.md has been updated for this version"
           else

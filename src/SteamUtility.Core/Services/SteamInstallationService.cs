@@ -20,7 +20,7 @@ public sealed class SteamInstallationService(ISteamLocator steamLocator)
 
         var libraryFolders = File.Exists(libraryFoldersPath)
             ? _libraryFoldersParser.Parse(File.ReadAllText(libraryFoldersPath))
-            : [new SteamLibraryFolder("0", steamAppsPath, true)];
+            : [new SteamLibraryFolder("0", root, true)];
 
         return new SteamInstallation(
             RootPath: root,

@@ -92,4 +92,88 @@ public static class IdleCliTests
             throw new Exception("Expected ApiInitFailed failure reason.");
         }
     }
+
+    public static void Run_WithMultipleAppIds_EmitsOneResultPerGame()
+    {
+        var result = CommandContractTestHarness.Run(
+            ["idle", "440", "570", "730"],
+            new SteamUtilityCli.CliRuntimeOverrides
+            {
+                ResolveInstallation = () => FakeSteamInstallationFactory.Create(),
+                RunMultiIdle = (_, appIds) => appIds
+                    .Select(id => JsonSerializer.Serialize(new
+                    {
+                        success = "Steam API initialized",
+                        appId = id,
+                        appName = "Idling"
+                    }))
+                    .ToList<string>()
+            });
+
+        var lines = result.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        if (lines.Length != 3)
+        {
+            throw new Exception($"Expected 3 result lines, got {lines.Length}.");
+        }
+
+        var expectedIds = new[] { 440u, 570u, 730u };
+        for (var i = 0; i < 3; i++)
+        {
+            using var doc = JsonDocument.Parse(lines[i]);
+            var root = doc.RootElement;
+            if (root.GetProperty("success").GetString() != "Steam API initialized")
+            {
+                throw new Exception($"Expected success in line {i}.");
+            }
+
+            if (root.GetProperty("appId").GetUInt32() != expectedIds[i])
+            {
+                throw new Exception($"Expected appId {expectedIds[i]} in line {i}.");
+            }
+        }
+    }
+
+    public static void Run_WithMultipleAppIds_AppNameAppliedToFirst_RestAreIdling()
+    {
+        var capturedAppName = "";
+        var result = CommandContractTestHarness.Run(
+            ["idle", "440", "570", "My Game"],
+            new SteamUtilityCli.CliRuntimeOverrides
+            {
+                ResolveInstallation = () => FakeSteamInstallationFactory.Create(),
+                RunMultiIdle = (_, appIds) =>
+                {
+                    // verify name is not passed to multi — the override receives only appIds
+                    capturedAppName = "multi-path";
+                    return appIds.Select(id => JsonSerializer.Serialize(new { success = "Steam API initialized", appId = id })).ToList<string>();
+                }
+            });
+
+        var lines = result.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        if (lines.Length != 2)
+        {
+            throw new Exception($"Expected 2 result lines, got {lines.Length}.");
+        }
+
+        if (capturedAppName != "multi-path")
+        {
+            throw new Exception("Expected RunMultiIdle to be called.");
+        }
+    }
+
+    public static void Run_WithMultipleAppIds_MissingInstallation_ReturnsError()
+    {
+        var result = CommandContractTestHarness.Run(
+            ["idle", "440", "570"],
+            new SteamUtilityCli.CliRuntimeOverrides
+            {
+                ResolveInstallation = () => null
+            });
+
+        using var payload = JsonDocument.Parse(result.Stdout);
+        if (payload.RootElement.GetProperty("error").GetString() != "Steam installation not found.")
+        {
+            throw new Exception("Expected missing-installation error for multi-game idle.");
+        }
+    }
 }

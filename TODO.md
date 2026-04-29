@@ -68,6 +68,20 @@
 - [x] Add regression tests for the remaining high-risk native services (`SteamworksSession`, `SteamOwnershipService`, `SteamApiNative`, `StatsSchemaLoader`) after the new CLI extraction coverage
 - [ ] Harden the release workflow / test harness around the custom test runner
 
+## Features
+- [x] Multi-game idle: `idle <app_id1> [app_id2 ...]` spawns one child process per AppID (Steamworks allows only one AppID per process); each child emits its own init-result JSON line; parent relays them and waits until Ctrl+C or all children exit; single-game path unchanged
+
+## Code quality fixes
+- [x] Replace `SingleOrDefault` with `FirstOrDefault` in `KeyValue` indexer — prevents crash on VDF files with duplicate keys
+- [x] Add Flatpak Steam path to `LinuxSteamLocator` — users with Flatpak Steam installation were getting `detect: not found`
+- [x] Guard `SteamApiNative.EnsureLoaded` against partial init — library handle is now released and reset if any `GetExport` call fails
+- [x] Extract `SteamPaths.ResolveSteamAppsPath` — eliminates duplicate private method between `SteamLibraryScanner` and `SteamCompatDataScanner`
+- [x] Fix default library folder path in `SteamInstallationService` — was incorrectly passing `steamAppsPath` instead of `root` as the library path
+- [x] Remove double-scan in `SteamStateReportService` — `ReportEntryCount` is now computed from already-collected data instead of calling `SteamCompatibilityReportService.Build` a second time
+- [x] Decouple `StatsSchemaLoader` from `SteamworksSession.Current` — session is now passed explicitly to `LoadUserGameStatsSchema` and propagated to private loaders; `SteamworksSession.Current` removed
+- [x] Fix `--app-id` CLI parsing — switched from `int.TryParse` to `uint.TryParse` to correctly accept the full Steam AppID range
+- [x] Fix `SimpleVdfReader.TryReadString` escape handling — correctly counts consecutive backslashes before a quote so that `\\"` terminates the string while `\"` does not
+
 ## Later
 - [ ] Consider Tauri or other GUI only after core parity is clearer
 

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-04-29
+
+### Added
+- Added multi-game idle support: `idle <app_id1> [app_id2 ...] [app_name]` starts one child idle process per AppID and relays each child initialization result.
+- Added Flatpak Steam install discovery for Linux users.
+
+### Fixed
+- Fixed `--app-id` parsing to accept unsigned Steam AppID input instead of rejecting values only because they are not signed integers.
+- Fixed VDF string parsing for quoted strings preceded by consecutive backslashes.
+- Fixed duplicate VDF key handling by returning the first matching key instead of throwing.
+- Fixed partial native Steam API initialization cleanup so failed export loading releases the library handle.
+- Fixed default Steam library folder reporting and removed duplicate compatibility-report scanning in state reports.
+- Decoupled stat schema loading from global `SteamworksSession.Current` state by passing the active session explicitly.
+
 ## [1.0.1] - 2026-04-14
 
 ### Changed
@@ -92,6 +106,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `REPORT_REAL_VALIDATION_TEST_LINUX.md` — Linux validation execution report (AppID 70120)
 - `TODO.md` — execution checklist and tracking board
 
-[Unreleased]: https://github.com/bernardopg/steam-utility-multiplataform/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/bernardopg/steam-utility-multiplataform/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/bernardopg/steam-utility-multiplataform/releases/tag/v1.0.2
 [1.0.1]: https://github.com/bernardopg/steam-utility-multiplataform/releases/tag/v1.0.1
 [1.0.0]: https://github.com/bernardopg/steam-utility-multiplataform/releases/tag/v1.0.0

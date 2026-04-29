@@ -8,6 +8,7 @@ public sealed class StatsSchemaLoader
     public bool LoadUserGameStatsSchema(
         SteamInstallation installation,
         uint appId,
+        SteamworksSession? session,
         out List<AchievementData> achievementDefinitions,
         out List<StatData> statDefinitions)
     {
@@ -26,6 +27,11 @@ public sealed class StatsSchemaLoader
             return false;
         }
 
+        if (session is null)
+        {
+            throw new InvalidOperationException("An active Steamworks session is required to load stat schema values.");
+        }
+
         var stats = keyValue[appId.ToString()]["stats"];
         if (!stats.Valid || stats.Children is null)
         {
@@ -39,15 +45,15 @@ public sealed class StatsSchemaLoader
             switch (rawType)
             {
                 case 1:
-                    LoadIntegerStat(statDefinitions, stat);
+                    LoadIntegerStat(statDefinitions, stat, session);
                     break;
                 case 2:
                 case 3:
-                    LoadFloatingPointStat(statDefinitions, stat, rawType == 3);
+                    LoadFloatingPointStat(statDefinitions, stat, session, rawType == 3);
                     break;
                 case 4:
                 case 5:
-                    LoadAchievements(achievementDefinitions, stat);
+                    LoadAchievements(achievementDefinitions, stat, session);
                     break;
             }
         }
@@ -112,12 +118,10 @@ public sealed class StatsSchemaLoader
         return hasFloatValue ? 2 : 1;
     }
 
-    private static void LoadIntegerStat(ICollection<StatData> statDefinitions, KeyValue stat)
+    private static void LoadIntegerStat(ICollection<StatData> statDefinitions, KeyValue stat, SteamworksSession session)
     {
-        var session = SteamworksSession.Current ?? throw new InvalidOperationException("An active Steamworks session is required.");
         var statId = stat["name"].AsString(string.Empty);
-        var statValue = 0;
-        var success = session.GetStat(statId, out statValue);
+        var success = session.GetStat(statId, out int statValue);
 
         statDefinitions.Add(new StatData
         {
@@ -133,12 +137,10 @@ public sealed class StatsSchemaLoader
         });
     }
 
-    private static void LoadFloatingPointStat(ICollection<StatData> statDefinitions, KeyValue stat, bool averageRate)
+    private static void LoadFloatingPointStat(ICollection<StatData> statDefinitions, KeyValue stat, SteamworksSession session, bool averageRate)
     {
-        var session = SteamworksSession.Current ?? throw new InvalidOperationException("An active Steamworks session is required.");
         var statId = stat["name"].AsString(string.Empty);
-        var statValue = 0f;
-        var success = session.GetStat(statId, out statValue);
+        var success = session.GetStat(statId, out float statValue);
 
         statDefinitions.Add(new StatData
         {
@@ -154,9 +156,8 @@ public sealed class StatsSchemaLoader
         });
     }
 
-    private static void LoadAchievements(ICollection<AchievementData> achievementDefinitions, KeyValue stat)
+    private static void LoadAchievements(ICollection<AchievementData> achievementDefinitions, KeyValue stat, SteamworksSession session)
     {
-        var session = SteamworksSession.Current ?? throw new InvalidOperationException("An active Steamworks session is required.");
         if (stat.Children is null)
         {
             return;

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using SteamUtility.Core.Abstractions;
@@ -555,18 +556,50 @@ public static class SteamUtilityCli
 
     static void PrintIdle(SteamInstallation? installation, CliOptions options, CliRuntimeOverrides overrides)
     {
-        if (!TryGetSteamworksAppId(installation, options, out var appId))
+        if (installation is null)
         {
+            WriteLegacyJson(new { error = "Steam installation not found." });
             return;
         }
 
-        var appName = options.Positionals.ElementAtOrDefault(1) ?? "Idling";
+        if (options.Positionals.Length == 0 || !uint.TryParse(options.Positionals[0], out var firstAppId))
+        {
+            WriteLegacyJson(new { error = "Invalid app_id" });
+            return;
+        }
 
+        var appIds = new List<uint> { firstAppId };
+        var appName = "Idling";
+
+        for (var i = 1; i < options.Positionals.Length; i++)
+        {
+            if (uint.TryParse(options.Positionals[i], out var additionalId))
+            {
+                appIds.Add(additionalId);
+            }
+            else
+            {
+                appName = options.Positionals[i];
+                break;
+            }
+        }
+
+        if (appIds.Count == 1)
+        {
+            PrintIdleSingle(installation, appIds[0], appName, overrides);
+            return;
+        }
+
+        PrintIdleMulti(installation, appIds, overrides);
+    }
+
+    static void PrintIdleSingle(SteamInstallation installation, uint appId, string appName, CliRuntimeOverrides overrides)
+    {
         try
         {
             if (overrides.RunIdle is not null)
             {
-                overrides.RunIdle(installation!, appId, appName);
+                overrides.RunIdle(installation, appId, appName);
                 WriteLegacyJson(new
                 {
                     success = "Steam API initialized",
@@ -578,7 +611,7 @@ public static class SteamUtilityCli
                 return;
             }
 
-            using var session = new SteamworksSession(installation!, appId);
+            using var session = new SteamworksSession(installation, appId);
             using var cancellation = new CancellationTokenSource();
 
             Console.CancelKeyPress += (_, eventArgs) =>
@@ -615,6 +648,117 @@ public static class SteamUtilityCli
         }
     }
 
+    static void PrintIdleMulti(SteamInstallation installation, IReadOnlyList<uint> appIds, CliRuntimeOverrides overrides)
+    {
+        if (overrides.RunMultiIdle is not null)
+        {
+            foreach (var line in overrides.RunMultiIdle(installation, appIds))
+            {
+                Console.WriteLine(line);
+            }
+
+            return;
+        }
+
+        var selfPath = GetSelfExecutablePath();
+        if (selfPath is null)
+        {
+            WriteLegacyJson(new { error = "Cannot spawn idle processes: executable path could not be determined. Run individual idle commands instead." });
+            return;
+        }
+
+        var processes = new List<Process>(appIds.Count);
+        using var cancellation = new CancellationTokenSource();
+
+        Console.CancelKeyPress += (_, eventArgs) =>
+        {
+            eventArgs.Cancel = true;
+            cancellation.Cancel();
+        };
+
+        try
+        {
+            foreach (var appId in appIds)
+            {
+                var proc = StartIdleChildProcess(selfPath, appId);
+                if (proc is not null)
+                {
+                    processes.Add(proc);
+                }
+                else
+                {
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = "Failed to start idle process", appId }));
+                }
+            }
+
+            if (processes.Count == 0)
+            {
+                return;
+            }
+
+            var initLines = new string?[processes.Count];
+            var readTasks = processes
+                .Select((proc, i) => Task.Run(() => { initLines[i] = proc.StandardOutput.ReadLine(); }))
+                .ToArray();
+
+            Task.WaitAll(readTasks);
+
+            foreach (var line in initLines)
+            {
+                if (line is not null)
+                {
+                    Console.WriteLine(line);
+                }
+            }
+
+            while (!cancellation.IsCancellationRequested && processes.Any(p => !p.HasExited))
+            {
+                Thread.Sleep(500);
+            }
+        }
+        finally
+        {
+            foreach (var proc in processes)
+            {
+                try
+                {
+                    if (!proc.HasExited)
+                    {
+                        proc.Kill();
+                    }
+                }
+                catch { }
+
+                proc.Dispose();
+            }
+        }
+    }
+
+    static string? GetSelfExecutablePath()
+    {
+        var path = Environment.ProcessPath;
+        return !string.IsNullOrWhiteSpace(path) && File.Exists(path) ? path : null;
+    }
+
+    static Process? StartIdleChildProcess(string executablePath, uint appId)
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo(executablePath)
+            {
+                ArgumentList = { "idle", appId.ToString() },
+                RedirectStandardOutput = true,
+                UseShellExecute = false
+            };
+
+            return Process.Start(startInfo);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     static void PrintAchievementData(SteamInstallation? installation, CliOptions options, CliRuntimeOverrides overrides)
     {
         if (!TryGetSteamworksAppId(installation, options, out var appId))
@@ -645,7 +789,7 @@ public static class SteamUtilityCli
                 session.RequestGlobalAchievementPercentages(TimeSpan.FromSeconds(10));
 
                 var schemaLoader = new StatsSchemaLoader();
-                if (!schemaLoader.LoadUserGameStatsSchema(installation!, appId, out achievements, out stats))
+                if (!schemaLoader.LoadUserGameStatsSchema(installation!, appId, session, out achievements, out stats))
                 {
                     achievements = [];
                     stats = [];
@@ -1288,7 +1432,7 @@ public static class SteamUtilityCli
     static bool ValidateStatsResetToDefaults(SteamworksSession session, SteamInstallation installation, uint appId)
     {
         var loader = new StatsSchemaLoader();
-        if (!loader.LoadUserGameStatsSchema(installation, appId, out _, out var statDefinitions))
+        if (!loader.LoadUserGameStatsSchema(installation, appId, session, out _, out var statDefinitions))
         {
             return true;
         }
@@ -1450,7 +1594,7 @@ public static class SteamUtilityCli
         Console.WriteLine("  state-report   Summarize Steam library, compat, and user state files");
         Console.WriteLine("  check_ownership <output_path> [app_ids_json_or_file]");
         Console.WriteLine("                 Check account ownership through the Steam native client and write games.json");
-        Console.WriteLine("  idle <app_id> [app_name]");
+        Console.WriteLine("  idle <app_id> [app_id2 ...] [app_name]");
         Console.WriteLine("  get_achievement_data <app_id> [storage_dir] [item_id]");
         Console.WriteLine("  unlock_achievement <app_id> <achievement_id>");
         Console.WriteLine("  lock_achievement <app_id> <achievement_id>");
@@ -1534,6 +1678,8 @@ public static class SteamUtilityCli
 
         public Action<SteamInstallation, uint, string>? RunIdle { get; init; }
 
+        public Func<SteamInstallation, IReadOnlyList<uint>, IReadOnlyList<string>>? RunMultiIdle { get; init; }
+
         public Func<SteamInstallation, uint, AchievementDataCommandResult>? LoadAchievementData { get; init; }
 
         public Func<SteamInstallation, uint, string, bool, AchievementMutationCommandResult>? RunSingleAchievementMutation { get; init; }
@@ -1587,8 +1733,8 @@ public static class SteamUtilityCli
                         diagnostics = true;
                         break;
 
-                    case "--app-id" when i + 1 < args.Length && int.TryParse(args[i + 1], out var parsedAppId):
-                        appId = parsedAppId;
+                    case "--app-id" when i + 1 < args.Length && uint.TryParse(args[i + 1], out var parsedUint):
+                        appId = (int)parsedUint;
                         i++;
                         break;
 

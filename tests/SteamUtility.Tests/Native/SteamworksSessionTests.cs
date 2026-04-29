@@ -55,11 +55,6 @@ public static class SteamworksSessionTests
 
             AssertFileState(currentSteamAppIdPath, new FileSnapshot(true, "original-current"));
             AssertFileState(baseSteamAppIdPath, baseSnapshot);
-
-            if (SteamworksSession.Current is not null)
-            {
-                throw new Exception("Expected Steamworks session to remain unset after constructor failure.");
-            }
         }
         finally
         {
@@ -100,11 +95,6 @@ public static class SteamworksSessionTests
 
             using (var session = new SteamworksSession(installation, 70120, resolver))
             {
-                if (SteamworksSession.Current != session)
-                {
-                    throw new Exception("Expected SteamworksSession.Current to point at the active session.");
-                }
-
                 if (Environment.GetEnvironmentVariable("SteamAppId") != "70120")
                 {
                     throw new Exception("Expected SteamAppId to be set while session is active.");
@@ -244,11 +234,6 @@ public static class SteamworksSessionTests
                 {
                     throw new Exception("Expected achievement reset to locked.");
                 }
-            }
-
-            if (SteamworksSession.Current is not null)
-            {
-                throw new Exception("Expected SteamworksSession.Current to be cleared after dispose.");
             }
 
             if (Environment.GetEnvironmentVariable("SteamAppId") != originalSteamAppId)

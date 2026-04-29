@@ -127,11 +127,22 @@ public static class SimpleVdfReader
 
             while (_index < _content.Length)
             {
-                if (_content[_index] == '"' && _content[_index - 1] != '\\')
+                if (_content[_index] == '"')
                 {
-                    value = _content[start.._index];
-                    _index++;
-                    return true;
+                    var backslashCount = 0;
+                    var j = _index - 1;
+                    while (j >= start && _content[j] == '\\')
+                    {
+                        backslashCount++;
+                        j--;
+                    }
+
+                    if (backslashCount % 2 == 0)
+                    {
+                        value = _content[start.._index];
+                        _index++;
+                        return true;
+                    }
                 }
 
                 _index++;

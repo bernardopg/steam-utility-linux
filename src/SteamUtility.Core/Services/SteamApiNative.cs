@@ -49,27 +49,36 @@ internal static class SteamApiNative
                 $"Failed to load the Steamworks native library from '{libraryPath}'.");
         }
 
-        _steamApiInit = GetExport<SteamApiInitDelegate>("SteamAPI_Init");
-        _steamApiShutdown = GetExport<SteamApiShutdownDelegate>("SteamAPI_Shutdown");
-        _steamApiRunCallbacks = GetExport<SteamApiRunCallbacksDelegate>("SteamAPI_RunCallbacks");
-        _steamUserV021 = GetExport<SteamUserV021Delegate>("SteamAPI_SteamUser_v021");
-        _steamUserStatsV012 = GetExport<SteamUserStatsV012Delegate>("SteamAPI_SteamUserStats_v012");
-        _getSteamId = GetExport<GetSteamIdDelegate>("SteamAPI_ISteamUser_GetSteamID");
-        _requestCurrentStats = GetExport<RequestCurrentStatsDelegate>("SteamAPI_ISteamUserStats_RequestCurrentStats");
-        _getStatInt = GetExport<GetStatIntDelegate>("SteamAPI_ISteamUserStats_GetStatInt32");
-        _getStatFloat = GetExport<GetStatFloatDelegate>("SteamAPI_ISteamUserStats_GetStatFloat");
-        _setStatInt = GetExport<SetStatIntDelegate>("SteamAPI_ISteamUserStats_SetStatInt32");
-        _setStatFloat = GetExport<SetStatFloatDelegate>("SteamAPI_ISteamUserStats_SetStatFloat");
-        _getAchievement = GetExport<GetAchievementDelegate>("SteamAPI_ISteamUserStats_GetAchievement");
-        _setAchievement = GetExport<SetAchievementDelegate>("SteamAPI_ISteamUserStats_SetAchievement");
-        _clearAchievement = GetExport<ClearAchievementDelegate>("SteamAPI_ISteamUserStats_ClearAchievement");
-        _storeStats = GetExport<StoreStatsDelegate>("SteamAPI_ISteamUserStats_StoreStats");
-        _getAchievementDisplayAttribute = GetExport<GetAchievementDisplayAttributeDelegate>("SteamAPI_ISteamUserStats_GetAchievementDisplayAttribute");
-        _getNumAchievements = GetExport<GetNumAchievementsDelegate>("SteamAPI_ISteamUserStats_GetNumAchievements");
-        _getAchievementName = GetExport<GetAchievementNameDelegate>("SteamAPI_ISteamUserStats_GetAchievementName");
-        _resetAllStats = GetExport<ResetAllStatsDelegate>("SteamAPI_ISteamUserStats_ResetAllStats");
-        _requestGlobalAchievementPercentages = GetExport<RequestGlobalAchievementPercentagesDelegate>("SteamAPI_ISteamUserStats_RequestGlobalAchievementPercentages");
-        _getAchievementAchievedPercent = GetExport<GetAchievementAchievedPercentDelegate>("SteamAPI_ISteamUserStats_GetAchievementAchievedPercent");
+        try
+        {
+            _steamApiInit = GetExport<SteamApiInitDelegate>("SteamAPI_Init");
+            _steamApiShutdown = GetExport<SteamApiShutdownDelegate>("SteamAPI_Shutdown");
+            _steamApiRunCallbacks = GetExport<SteamApiRunCallbacksDelegate>("SteamAPI_RunCallbacks");
+            _steamUserV021 = GetExport<SteamUserV021Delegate>("SteamAPI_SteamUser_v021");
+            _steamUserStatsV012 = GetExport<SteamUserStatsV012Delegate>("SteamAPI_SteamUserStats_v012");
+            _getSteamId = GetExport<GetSteamIdDelegate>("SteamAPI_ISteamUser_GetSteamID");
+            _requestCurrentStats = GetExport<RequestCurrentStatsDelegate>("SteamAPI_ISteamUserStats_RequestCurrentStats");
+            _getStatInt = GetExport<GetStatIntDelegate>("SteamAPI_ISteamUserStats_GetStatInt32");
+            _getStatFloat = GetExport<GetStatFloatDelegate>("SteamAPI_ISteamUserStats_GetStatFloat");
+            _setStatInt = GetExport<SetStatIntDelegate>("SteamAPI_ISteamUserStats_SetStatInt32");
+            _setStatFloat = GetExport<SetStatFloatDelegate>("SteamAPI_ISteamUserStats_SetStatFloat");
+            _getAchievement = GetExport<GetAchievementDelegate>("SteamAPI_ISteamUserStats_GetAchievement");
+            _setAchievement = GetExport<SetAchievementDelegate>("SteamAPI_ISteamUserStats_SetAchievement");
+            _clearAchievement = GetExport<ClearAchievementDelegate>("SteamAPI_ISteamUserStats_ClearAchievement");
+            _storeStats = GetExport<StoreStatsDelegate>("SteamAPI_ISteamUserStats_StoreStats");
+            _getAchievementDisplayAttribute = GetExport<GetAchievementDisplayAttributeDelegate>("SteamAPI_ISteamUserStats_GetAchievementDisplayAttribute");
+            _getNumAchievements = GetExport<GetNumAchievementsDelegate>("SteamAPI_ISteamUserStats_GetNumAchievements");
+            _getAchievementName = GetExport<GetAchievementNameDelegate>("SteamAPI_ISteamUserStats_GetAchievementName");
+            _resetAllStats = GetExport<ResetAllStatsDelegate>("SteamAPI_ISteamUserStats_ResetAllStats");
+            _requestGlobalAchievementPercentages = GetExport<RequestGlobalAchievementPercentagesDelegate>("SteamAPI_ISteamUserStats_RequestGlobalAchievementPercentages");
+            _getAchievementAchievedPercent = GetExport<GetAchievementAchievedPercentDelegate>("SteamAPI_ISteamUserStats_GetAchievementAchievedPercent");
+        }
+        catch
+        {
+            NativeLibrary.Free(_libraryHandle);
+            _libraryHandle = IntPtr.Zero;
+            throw;
+        }
     }
 
     public static bool Init() => _steamApiInit!();

@@ -94,7 +94,7 @@ public static class NativeServiceRegressionTests
         var fakeInstall = FakeSteamInstallationFactory.Create(installationRoot, steamAppsPath);
         var loader = new StatsSchemaLoader();
 
-        if (loader.LoadUserGameStatsSchema(fakeInstall, 70120, out var achievements, out var stats))
+        if (loader.LoadUserGameStatsSchema(fakeInstall, 70120, null, out var achievements, out var stats))
         {
             throw new Exception("Expected missing schema file to return false.");
         }

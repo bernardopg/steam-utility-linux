@@ -10,7 +10,6 @@ public sealed class SteamStateReportService
     private readonly SteamConfigCompatibilityParser _configParser = new();
     private readonly SteamLoginUsersParser _loginUsersParser = new();
     private readonly SteamUserConfigScanner _userConfigScanner = new();
-    private readonly SteamCompatibilityReportService _compatibilityReportService = new();
 
     public SteamEnvironmentSummary Build(SteamInstallation installation)
     {
@@ -19,7 +18,10 @@ public sealed class SteamStateReportService
         var tools = _compatibilityToolScanner.Scan(installation);
         var configPath = Path.Combine(installation.RootPath, "config", "config.vdf");
         var mappings = _configParser.Parse(configPath);
-        var report = _compatibilityReportService.Build(installation);
+
+        var reportAppIds = new SortedSet<int>(apps.Select(static a => a.AppId));
+        reportAppIds.UnionWith(compatData.Select(static c => c.AppId));
+        reportAppIds.UnionWith(mappings.Select(static m => m.AppId));
 
         var loginUsers = LoadLoginUsers(installation.RootPath);
         var userConfigs = _userConfigScanner.Scan(installation);
@@ -42,7 +44,7 @@ public sealed class SteamStateReportService
             CompatDataCount: compatData.Count,
             CompatibilityToolCount: tools.Count,
             ExplicitCompatibilityMappings: mappings.Count,
-            ReportEntryCount: report.Count,
+            ReportEntryCount: reportAppIds.Count,
             LoginUserCount: loginUsers.Count,
             ActiveSteamId: activeUser?.SteamId,
             ActiveAccountName: activeUser?.AccountName ?? activeUser?.PersonaName,

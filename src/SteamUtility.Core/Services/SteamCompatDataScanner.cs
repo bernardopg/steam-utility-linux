@@ -39,14 +39,6 @@ public sealed class SteamCompatDataScanner
             .ToArray();
     }
 
-    private static string ResolveSteamAppsPath(string libraryPath)
-    {
-        var candidate = Path.Combine(libraryPath, "steamapps");
-        if (Directory.Exists(candidate))
-        {
-            return candidate;
-        }
-
-        return libraryPath;
-    }
+    private static string ResolveSteamAppsPath(string libraryPath) =>
+        SteamPaths.ResolveSteamAppsPath(libraryPath);
 }
