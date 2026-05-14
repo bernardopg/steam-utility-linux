@@ -67,6 +67,7 @@
 - [x] Add coverage collection/reporting (for example Coverlet + CI artifact/public summary); this is now implemented, and the repository's direct validation path remains `dotnet run --project tests/SteamUtility.Tests`
 - [x] Add regression tests for the remaining high-risk native services (`SteamworksSession`, `SteamOwnershipService`, `SteamApiNative`, `StatsSchemaLoader`) after the new CLI extraction coverage
 - [x] Harden the release workflow / test harness around the custom test runner. (`TestRunner` now runs all tests and prints pass/fail totals; SGI stdout JSON contract tests added)
+- [x] Keep the CI build/test matrix green on Linux and Windows after the JSON stdout contract hardening. (`main` at `191fc01`; CI run `25843104791` passed)
 
 ## Features
 - [x] Multi-game idle: `idle <app_id1> [app_id2 ...]` spawns one child process per AppID (Steamworks allows only one AppID per process); each child emits its own init-result JSON line; parent relays them and waits until Ctrl+C or all children exit; single-game path unchanged
@@ -88,4 +89,4 @@
 ## Notes
 - The upstream command surface from `zevnda/steam-utility` is present in this repository (`check_ownership`, `idle`, `get_achievement_data`, `unlock_achievement`, `lock_achievement`, `toggle_achievement`, `unlock_all_achievements`, `lock_all_achievements`, `update_stats`, `reset_all_stats`).
 - This repository already goes beyond upstream with extra discovery/report commands such as `detect`, `libraries`, `apps`, `compatdata`, `compat-tools`, `compat-mapping`, `compat-report`, and `state-report`.
-- The main parity gap is no longer missing commands; it is proof and validation: Windows-specific runtime coverage, Windows real-session validation, and release-workflow/test-harness hardening around the custom test runner.
+- The main parity gap is no longer missing commands or harness plumbing; it is proof and validation on Windows: automated CI now builds/runs the custom test runner on Windows, but a real Windows Steam session still needs to exercise the native command flow end-to-end.
