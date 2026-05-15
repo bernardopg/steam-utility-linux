@@ -96,7 +96,7 @@ static int g_achievement_unlocked = 0;
 
 static int g_dummy_user;
 static int g_dummy_stats;
-static const uint64_t g_steam_id = 76561198893709131ULL;
+static const uint64_t g_steam_id = 12345678901234567ULL;
 
 static const char* ResolveAchievementAttribute(const char* key)
 {

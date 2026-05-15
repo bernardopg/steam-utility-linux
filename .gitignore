@@ -11,6 +11,8 @@ TestResults/
 *.nupkg
 *.snupkg
 .env
+.env.*
+!.env.example
 steam_appid.txt
 /.hermes
 /.vscode

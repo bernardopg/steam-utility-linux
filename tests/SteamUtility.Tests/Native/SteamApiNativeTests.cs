@@ -87,7 +87,7 @@ public static class SteamApiNativeTests
             if (steamUser == IntPtr.Zero) throw new Exception("Expected Steam user interface.");
             if (steamUserStats == IntPtr.Zero) throw new Exception("Expected Steam user stats interface.");
 
-            if (SteamApiNative.GetSteamId(steamUser) != 76561198893709131UL)
+            if (SteamApiNative.GetSteamId(steamUser) != 12345678901234567UL)
             {
                 throw new Exception("Unexpected Steam ID.");
             }

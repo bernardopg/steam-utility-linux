@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-14
 **Machine:** Linux desktop
-**Steam account:** `faze_spratty (76561198893709131)`
+**Steam account:** `faze_spratty ([REDACTED_STEAM_ID])`
 **Steam root:** `/home/bitter/.steam/steam`
 **Library root:** `/home/bitter/.local/share/Steam`
 **Validation target:** AppID `70120` — `Hacker Evolution Duality`
@@ -42,7 +42,7 @@ Live validation of the Linux Steam integration, including:
   - installed apps: `10`
   - compatdata entries: `9`
   - compatibility tools: `5`
-  - active account: `faze_spratty (76561198893709131)`
+  - active account: `faze_spratty ([REDACTED_STEAM_ID])`
 
 ### Ownership validation
 `check_ownership` for `[70120]` returned:

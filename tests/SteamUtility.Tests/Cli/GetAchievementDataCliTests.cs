@@ -151,7 +151,7 @@ public static class GetAchievementDataCliTests
     private static SteamUtilityCli.AchievementDataCommandResult BuildSampleResult()
     {
         return new SteamUtilityCli.AchievementDataCommandResult(
-            76561198000000000,
+            12345678901234567,
             [
                 new AchievementData
                 {
